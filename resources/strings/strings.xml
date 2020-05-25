@@ -1,7 +1,10 @@
 <strings>
-    <string id="AppName">inline-skating</string>
+    <string id="AppName">Inline Skating</string>
 
-    <string id="prompt">Click the menu button</string>
+    <string id="heartRate">Heart Rate</string>
+    <string id="distance">Distance</string>
+    <string id="speed">Speed</string>
+    <string id="timer">Timer</string>
 
     <string id="menu_label_1">Item 1</string>
     <string id="menu_label_2">Item 2</string>

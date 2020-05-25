@@ -6,7 +6,7 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
         BehaviorDelegate.initialize();
     }
 
-    function onMenu() {
+    function onSelect() {
         WatchUi.pushView(new Rez.Menus.MainMenu(), new InlineSkatingMenuDelegate(), WatchUi.SLIDE_UP);
         return true;
     }
