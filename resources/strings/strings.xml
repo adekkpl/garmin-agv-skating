@@ -1,11 +1,123 @@
 <strings>
-    <string id="AppName">Inline Skating</string>
-
+    <!-- Application -->
+    <string id="AppName">Aggressive Skating</string>
+    
+    <!-- Main UI Labels -->
     <string id="heartRate">Heart Rate</string>
     <string id="distance">Distance</string>
     <string id="speed">Speed</string>
     <string id="timer">Timer</string>
-
-    <string id="menu_label_1">Item 1</string>
-    <string id="menu_label_2">Item 2</string>
+    <string id="tricks">Tricks</string>
+    <string id="grinds">Grinds</string>
+    <string id="jumps">Jumps</string>
+    <string id="session">Session</string>
+    
+    <!-- Status Messages -->
+    <string id="sessionActive">ACTIVE</string>
+    <string id="sessionStopped">STOPPED</string>
+    <string id="noData">NO DATA</string>
+    <string id="startSession">Start Session</string>
+    <string id="stopSession">Stop Session</string>
+    <string id="gpsConnecting">GPS Connecting...</string>
+    <string id="gpsConnected">GPS Connected</string>
+    <string id="sensorsReady">Sensors Ready</string>
+    
+    <!-- Trick Detection -->
+    <string id="trickDetected">TRICK!</string>
+    <string id="grindDetected">GRIND!</string>
+    <string id="jumpDetected">JUMP!</string>
+    <string id="longestGrind">Longest Grind</string>
+    <string id="detectionState">Detection State</string>
+    
+    <!-- Performance Metrics -->
+    <string id="maxSpeed">Max Speed</string>
+    <string id="avgSpeed">Avg Speed</string>
+    <string id="maxHeartRate">Max HR</string>
+    <string id="avgHeartRate">Avg HR</string>
+    <string id="calories">Calories</string>
+    <string id="performanceRating">Rating</string>
+    
+    <!-- Display Modes -->
+    <string id="modeMain">MAIN</string>
+    <string id="modeTricks">TRICKS</string>
+    <string id="modePerformance">PERF</string>
+    <string id="modeSession">SESSION</string>
+    
+    <!-- Menu Items -->
+    <string id="menu_start_session">Start Session</string>
+    <string id="menu_stop_session">Stop Session</string>
+    <string id="menu_settings">Settings</string>
+    <string id="menu_statistics">Statistics</string>
+    <string id="menu_about">About</string>
+    <string id="menu_sensitivity">Trick Sensitivity</string>
+    <string id="menu_gps_settings">GPS Settings</string>
+    <string id="menu_reset_stats">Reset Statistics</string>
+    
+    <!-- Settings -->
+    <string id="sensitivity_low">Low</string>
+    <string id="sensitivity_medium">Medium</string>
+    <string id="sensitivity_high">High</string>
+    <string id="sensitivity_desc_low">Less sensitive detection</string>
+    <string id="sensitivity_desc_medium">Default sensitivity</string>
+    <string id="sensitivity_desc_high">More sensitive detection</string>
+    
+    <!-- Achievements -->
+    <string id="achievement_first_trick">First Trick</string>
+    <string id="achievement_trick_master">Trick Master</string>
+    <string id="achievement_trick_legend">Trick Legend</string>
+    <string id="achievement_first_grind">First Grind</string>
+    <string id="achievement_grind_king">Grind King</string>
+    <string id="achievement_grind_legend">Grind Legend</string>
+    <string id="achievement_endurance">Endurance Skater</string>
+    <string id="achievement_marathon">Marathon Skater</string>
+    <string id="achievement_distance">Distance Cruiser</string>
+    <string id="achievement_speed">Speed Demon</string>
+    
+    <!-- Confirmations -->
+    <string id="confirm_stop_session">Stop session and exit?</string>
+    <string id="confirm_reset_stats">Reset all statistics?</string>
+    <string id="confirm_yes">Yes</string>
+    <string id="confirm_no">No</string>
+    
+    <!-- Units -->
+    <string id="unit_bpm">bpm</string>
+    <string id="unit_kmh">km/h</string>
+    <string id="unit_meters">m</string>
+    <string id="unit_kilometers">km</string>
+    <string id="unit_seconds">s</string>
+    <string id="unit_minutes">min</string>
+    <string id="unit_hours">h</string>
+    <string id="unit_calories">cal</string>
+    
+    <!-- Error Messages -->
+    <string id="error_no_gps">GPS unavailable</string>
+    <string id="error_no_sensors">Sensors unavailable</string>
+    <string id="error_session_failed">Session start failed</string>
+    
+    <!-- Instructions -->
+    <string id="instruction_start">Press START to begin</string>
+    <string id="instruction_switch_mode">Press ENTER to switch mode</string>
+    <string id="instruction_menu">Press MENU for options</string>
+    
+    <!-- Goals -->
+    <string id="goals_progress">Goals Progress</string>
+    <string id="goal_tricks">Tricks Goal</string>
+    <string id="goal_distance">Distance Goal</string>
+    <string id="goal_time">Time Goal</string>
+    <string id="goal_grinds">Grinds Goal</string>
+    
+    <!-- Session Overview -->
+    <string id="session_overview">SESSION OVERVIEW</string>
+    <string id="session_duration">Duration</string>
+    <string id="session_achievements">Achievements</string>
+    <string id="session_summary">Session Summary</string>
+    
+    <!-- About -->
+    <string id="about_version">Version</string>
+    <string id="about_author">Author</string>
+    <string id="about_description">Aggressive Inline Skating Tracker</string>
+    
+    <!-- Legacy compatibility -->
+    <string id="menu_label_1">Start/Stop Session</string>
+    <string id="menu_label_2">Display Mode</string>
 </strings>
