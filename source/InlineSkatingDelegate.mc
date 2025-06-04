@@ -1,3 +1,4 @@
+// InlineSkatingDelegate.mc
 // Garmin Aggressive Inline Skating Tracker v2.0.0
 // Input Delegate for Main View
 using Toybox.Lang;
@@ -12,20 +13,34 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     
     function initialize() {
         BehaviorDelegate.initialize();
-        app = Application.getApp();
         lastButtonPress = System.getTimer();
         System.println("InlineSkatingDelegate: Input delegate initialized");
+        
+        // Poprawka: Bezpieczne uzyskanie referencji do aplikacji
+        try {
+            app = Application.getApp();
+            if (app != null) {
+                System.println("InlineSkatingDelegate: App reference obtained successfully");
+            } else {
+                System.println("InlineSkatingDelegate: App reference is null");
+            }
+        } catch (exception) {
+            System.println("InlineSkatingDelegate: Failed to get app reference: " + exception.getErrorMessage());
+            app = null;
+        }
     }
 
     // Set reference to the view for interaction
     function setView(viewRef as InlineSkatingView) as Void {
         view = viewRef;
+        System.println("InlineSkatingDelegate: View reference set");
     }
 
     // Handle START button press (primary action button)
-    //function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
     function onKey(keyEvent) {
         var key = keyEvent.getKey();
+        
+        System.println("InlineSkatingDelegate: Key pressed - " + key);
         
         switch (key) {
             case WatchUi.KEY_START:
@@ -39,12 +54,14 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
             case WatchUi.KEY_ESC:
                 return onBackButton();
             default:
+                System.println("InlineSkatingDelegate: Unhandled key - " + key);
                 return false;
         }
     }
 
     // Handle SELECT button (center button)
     function onSelect() {
+        System.println("InlineSkatingDelegate: Select pressed");
         return onEnterButton();
     }
 
@@ -52,11 +69,28 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     function onMenu() {
         System.println("InlineSkatingDelegate: Menu button pressed");
         
+        // Bezpieczne uzyskanie referencji do aplikacji jeśli jeszcze nie ma
+        if (app == null) {
+            try {
+                app = Application.getApp();
+            } catch (exception) {
+                System.println("InlineSkatingDelegate: Cannot get app in onMenu: " + exception.getErrorMessage());
+                return true;
+            }
+        }
+        
         // Show main menu
         var menu = new WatchUi.Menu2({:title => "Skating Options"});
         
         // Add menu items based on session state
-        var sessionActive = view != null ? view.getSessionStatus() : false;
+        var sessionActive = false;
+        if (view != null) {
+            try {
+                sessionActive = view.getSessionStatus();
+            } catch (exception) {
+                System.println("InlineSkatingDelegate: Error getting session status: " + exception.getErrorMessage());
+            }
+        }
         
         if (sessionActive) {
             menu.addItem(new WatchUi.MenuItem(
@@ -112,7 +146,13 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
         
         // Toggle session start/stop
         if (view != null) {
-            view.toggleSession();
+            try {
+                view.toggleSession();
+            } catch (exception) {
+                System.println("InlineSkatingDelegate: Error toggling session: " + exception.getErrorMessage());
+            }
+        } else {
+            System.println("InlineSkatingDelegate: View is null, cannot toggle session");
         }
         
         return true;
@@ -124,7 +164,13 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
         
         // Switch display mode
         if (view != null) {
-            view.switchDisplayMode();
+            try {
+                view.switchDisplayMode();
+            } catch (exception) {
+                System.println("InlineSkatingDelegate: Error switching display mode: " + exception.getErrorMessage());
+            }
+        } else {
+            System.println("InlineSkatingDelegate: View is null, cannot switch mode");
         }
         
         return true;
@@ -136,7 +182,11 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
         
         // Cycle through display modes (forward)
         if (view != null) {
-            view.switchDisplayMode();
+            try {
+                view.switchDisplayMode();
+            } catch (exception) {
+                System.println("InlineSkatingDelegate: Error in UP button: " + exception.getErrorMessage());
+            }
         }
         
         return true;
@@ -149,7 +199,11 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
         // Could implement reverse cycling through modes
         // For now, just switch normally
         if (view != null) {
-            view.switchDisplayMode();
+            try {
+                view.switchDisplayMode();
+            } catch (exception) {
+                System.println("InlineSkatingDelegate: Error in DOWN button: " + exception.getErrorMessage());
+            }
         }
         
         return true;
@@ -160,7 +214,14 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
         System.println("InlineSkatingDelegate: BACK button pressed");
         
         // Check if session is active before allowing exit
-        var sessionActive = view != null ? view.getSessionStatus() : false;
+        var sessionActive = false;
+        if (view != null) {
+            try {
+                sessionActive = view.getSessionStatus();
+            } catch (exception) {
+                System.println("InlineSkatingDelegate: Error getting session status in back: " + exception.getErrorMessage());
+            }
+        }
         
         if (sessionActive) {
             // Show confirmation dialog for stopping session
@@ -174,22 +235,21 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle physical key events (for watches with physical buttons)
-    //function onKeyPressed(keyEvent as WatchUi.KeyEvent) as Boolean {
     function onKeyPressed(keyEvent) {
         return onKey(keyEvent);
     }
 
     // Handle key release events
-    //function onKeyReleased(keyEvent as WatchUi.KeyEvent) as Boolean {
     function onKeyReleased(keyEvent) {
         // Could implement long-press functionality here
         return false;
     }
 
     // Handle swipe gestures (for touchscreen devices)
-    //function onSwipe(swipeEvent as WatchUi.SwipeEvent) as Boolean {
     function onSwipe(swipeEvent) {
         var direction = swipeEvent.getDirection();
+        
+        System.println("InlineSkatingDelegate: Swipe detected - " + direction);
         
         switch (direction) {
             case WatchUi.SWIPE_LEFT:
@@ -210,7 +270,11 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
         System.println("InlineSkatingDelegate: Swipe left");
         
         if (view != null) {
-            view.switchDisplayMode();
+            try {
+                view.switchDisplayMode();
+            } catch (exception) {
+                System.println("InlineSkatingDelegate: Error in swipe left: " + exception.getErrorMessage());
+            }
         }
         
         return true;
@@ -222,7 +286,11 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
         
         // Could implement reverse mode switching
         if (view != null) {
-            view.switchDisplayMode();
+            try {
+                view.switchDisplayMode();
+            } catch (exception) {
+                System.println("InlineSkatingDelegate: Error in swipe right: " + exception.getErrorMessage());
+            }
         }
         
         return true;
@@ -235,18 +303,21 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle down swipe - toggle session
-    function onSwipeDown(){
+    function onSwipeDown() {
         System.println("InlineSkatingDelegate: Swipe down");
         
         if (view != null) {
-            view.toggleSession();
+            try {
+                view.toggleSession();
+            } catch (exception) {
+                System.println("InlineSkatingDelegate: Error in swipe down: " + exception.getErrorMessage());
+            }
         }
         
         return true;
     }
 
     // Handle tap events (for touchscreen)
-    //function onTap(clickEvent as WatchUi.ClickEvent) as Boolean {
     function onTap(clickEvent) {
         var coordinates = clickEvent.getCoordinates();
         System.println("InlineSkatingDelegate: Tap at " + coordinates[0] + "," + coordinates[1]);
@@ -257,7 +328,6 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle touch events
-    //function onSelectable(selectableEvent as WatchUi.SelectableEvent) as Boolean {
     function onSelectable(selectableEvent) {
         // Handle selectable UI elements if needed
         return false;
@@ -274,9 +344,15 @@ class InlineSkatingMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     function onSelect(item as WatchUi.MenuItem) as Void {
         var itemId = item.getId();
-        var app = Application.getApp();
         
         System.println("InlineSkatingMenuDelegate: Menu item selected - " + itemId);
+        
+        var app = null;
+        try {
+            app = Application.getApp();
+        } catch (exception) {
+            System.println("InlineSkatingMenuDelegate: Cannot get app: " + exception.getErrorMessage());
+        }
         
         switch (itemId) {
             case :start_session:
@@ -294,6 +370,9 @@ class InlineSkatingMenuDelegate extends WatchUi.Menu2InputDelegate {
             case :about:
                 handleAbout();
                 break;
+            default:
+                System.println("InlineSkatingMenuDelegate: Unknown menu item: " + itemId);
+                break;
         }
         
         WatchUi.popView(WatchUi.SLIDE_DOWN);
@@ -304,18 +383,30 @@ class InlineSkatingMenuDelegate extends WatchUi.Menu2InputDelegate {
     }
 
     // Handle start session menu item
-    function handleStartSession(app as InlineSkatingApp) as Void {
+    function handleStartSession(app) as Void {
         if (app != null) {
-            app.startSession();
-            System.println("InlineSkatingMenuDelegate: Session started from menu");
+            try {
+                app.startSession();
+                System.println("InlineSkatingMenuDelegate: Session started from menu");
+            } catch (exception) {
+                System.println("InlineSkatingMenuDelegate: Error starting session: " + exception.getErrorMessage());
+            }
+        } else {
+            System.println("InlineSkatingMenuDelegate: Cannot start session - app is null");
         }
     }
 
     // Handle stop session menu item
-    function handleStopSession(app as InlineSkatingApp) as Void {
+    function handleStopSession(app) as Void {
         if (app != null) {
-            app.stopSession();
-            System.println("InlineSkatingMenuDelegate: Session stopped from menu");
+            try {
+                app.stopSession();
+                System.println("InlineSkatingMenuDelegate: Session stopped from menu");
+            } catch (exception) {
+                System.println("InlineSkatingMenuDelegate: Error stopping session: " + exception.getErrorMessage());
+            }
+        } else {
+            System.println("InlineSkatingMenuDelegate: Cannot stop session - app is null");
         }
     }
 
@@ -383,7 +474,13 @@ class SettingsMenuDelegate extends WatchUi.Menu2InputDelegate {
 
     function onSelect(item as WatchUi.MenuItem) as Void {
         var itemId = item.getId();
-        var app = Application.getApp();
+        
+        var app = null;
+        try {
+            app = Application.getApp();
+        } catch (exception) {
+            System.println("SettingsMenuDelegate: Cannot get app: " + exception.getErrorMessage());
+        }
         
         switch (itemId) {
             case :sensitivity:
@@ -402,7 +499,7 @@ class SettingsMenuDelegate extends WatchUi.Menu2InputDelegate {
         WatchUi.popView(WatchUi.SLIDE_RIGHT);
     }
 
-    function handleSensitivitySettings(app as InlineSkatingApp) as Void {
+    function handleSensitivitySettings(app) as Void {
         // Create sensitivity adjustment menu
         var sensitivityMenu = new WatchUi.Menu2({:title => "Trick Sensitivity"});
         
@@ -434,7 +531,14 @@ class SensitivityDelegate extends WatchUi.Menu2InputDelegate {
 
     function onSelect(item as WatchUi.MenuItem) as Void {
         var itemId = item.getId();
-        var app = Application.getApp();
+        
+        var app = null;
+        try {
+            app = Application.getApp();
+        } catch (exception) {
+            System.println("SensitivityDelegate: Cannot get app: " + exception.getErrorMessage());
+        }
+        
         var trickDetector = app != null ? app.getTrickDetector() : null;
         
         if (trickDetector != null) {
@@ -467,13 +571,17 @@ class ExitConfirmationDelegate extends WatchUi.ConfirmationDelegate {
         ConfirmationDelegate.initialize();
     }
 
-    //function onResponse(response as WatchUi.Response) as Boolean {
-    function onResponse(response) { 
+    function onResponse(response) {
         if (response == WatchUi.CONFIRM_YES) {
             // User confirmed - stop session and exit
-            var app = Application.getApp();
-            if (app != null) {
-                app.stopSession();
+            var app = null;
+            try {
+                app = Application.getApp();
+                if (app != null) {
+                    app.stopSession();
+                }
+            } catch (exception) {
+                System.println("ExitConfirmationDelegate: Error stopping session: " + exception.getErrorMessage());
             }
             System.exit();
         } else {
@@ -491,16 +599,20 @@ class ResetStatsDelegate extends WatchUi.ConfirmationDelegate {
         ConfirmationDelegate.initialize();
     }
 
-    //function onResponse(response as WatchUi.Response) as Boolean {
     function onResponse(response) {
         if (response == WatchUi.CONFIRM_YES) {
             // User confirmed - reset all statistics
-            var app = Application.getApp();
-            var sessionStats = app != null ? app.getSessionStats() : null;
-            
-            if (sessionStats != null) {
-                sessionStats.reset();
-                System.println("ResetStatsDelegate: Statistics reset");
+            var app = null;
+            try {
+                app = Application.getApp();
+                var sessionStats = app != null ? app.getSessionStats() : null;
+                
+                if (sessionStats != null) {
+                    sessionStats.reset();
+                    System.println("ResetStatsDelegate: Statistics reset");
+                }
+            } catch (exception) {
+                System.println("ResetStatsDelegate: Error resetting stats: " + exception.getErrorMessage());
             }
         }
         

@@ -8,7 +8,6 @@ using Toybox.System;
 using Toybox.Application;
 using Toybox.Math;
 
-
 class InlineSkatingView extends WatchUi.View {
     
     // Display modes - jako stałe klasowe
@@ -36,17 +35,19 @@ class InlineSkatingView extends WatchUi.View {
     var achievementShowTime = 0;
     var lastAchievement;
     
-    /* function initialize() {
-        View.initialize();
-        System.println("InlineSkatingView: Initializing main view");
-        
-        currentDisplayMode = DisplayMode.MODE_MAIN;
-        app = Application.getApp();
-        lastUpdateTime = System.getTimer();
-    } */
-   function initialize() {
+    function initialize() {
         View.initialize();
         currentDisplayMode = MODE_MAIN;
+        // Poprawka: Bezpieczne uzyskanie referencji do aplikacji
+        try {
+            app = Application.getApp();
+            System.println("InlineSkatingView: App reference obtained successfully");
+        } catch (exception) {
+            System.println("InlineSkatingView: Failed to get app reference: " + exception.getErrorMessage());
+            app = null;
+        }
+        lastUpdateTime = System.getTimer();
+        System.println("InlineSkatingView: View initialized");
     }
 
     // Load resources and setup layout
@@ -65,14 +66,34 @@ class InlineSkatingView extends WatchUi.View {
         System.println("InlineSkatingView: View shown");
         needsFullRedraw = true;
         
-        // Setup sensor data callback if app is available
-        if (app != null && app.getSensorManager() != null) {
-            app.getSensorManager().setDataUpdateCallback(method(:onSensorDataUpdate));
+        // Poprawka: Bezpieczne uzyskanie referencji jeśli wcześniej się nie udało
+        if (app == null) {
+            try {
+                app = Application.getApp();
+                System.println("InlineSkatingView: App reference obtained in onShow");
+            } catch (exception) {
+                System.println("InlineSkatingView: Still cannot get app reference: " + exception.getErrorMessage());
+            }
         }
         
-        // Setup trick detection callback
-        if (app != null && app.getTrickDetector() != null) {
-            app.getTrickDetector().setTrickDetectedCallback(method(:onTrickDetected));
+        // Setup sensor data callback if app is available
+        if (app != null) {
+            try {
+                var sensorManager = app.getSensorManager();
+                if (sensorManager != null) {
+                    sensorManager.setDataUpdateCallback(method(:onSensorDataUpdate));
+                    System.println("InlineSkatingView: Sensor callback set");
+                }
+                
+                // Setup trick detection callback
+                var trickDetector = app.getTrickDetector();
+                if (trickDetector != null) {
+                    trickDetector.setTrickDetectedCallback(method(:onTrickDetected));
+                    System.println("InlineSkatingView: Trick detection callback set");
+                }
+            } catch (exception) {
+                System.println("InlineSkatingView: Error setting up callbacks: " + exception.getErrorMessage());
+            }
         }
     }
 
@@ -83,6 +104,8 @@ class InlineSkatingView extends WatchUi.View {
 
     // Main update function
     function onUpdate(dc as Graphics.Dc) as Void {
+        System.println("InlineSkatingView: onUpdate called - mode: " + currentDisplayMode);
+        
         // Clear screen
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
@@ -107,6 +130,9 @@ class InlineSkatingView extends WatchUi.View {
             case MODE_SESSION:
                 drawSessionScreen(dc);
                 break;
+            default:
+                drawErrorScreen(dc, "Unknown display mode: " + currentDisplayMode);
+                break;
         }
         
         // Draw common elements
@@ -128,10 +154,31 @@ class InlineSkatingView extends WatchUi.View {
         dc.drawText(centerX, 10, Graphics.FONT_TINY, "AGGRESSIVE SKATING", Graphics.TEXT_JUSTIFY_CENTER);
     }
 
+    // Poprawka: Dodaj ekran błędu dla debugowania
+    function drawErrorScreen(dc, errorMsg) as Void {
+        dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(centerX, centerY - 20, Graphics.FONT_SMALL, "ERROR", Graphics.TEXT_JUSTIFY_CENTER);
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(centerX, centerY, Graphics.FONT_TINY, errorMsg, Graphics.TEXT_JUSTIFY_CENTER);
+    }
+
     // Draw main screen with key metrics
     function drawMainScreen(dc as Graphics.Dc) as Void {
-        var sessionStats = app != null ? app.getSessionStats() : null;
-        var displayData = sessionStats != null ? sessionStats.getDisplayData() : null;
+        System.println("InlineSkatingView: Drawing main screen");
+        
+        var sessionStats = null;
+        var displayData = null;
+        
+        if (app != null) {
+            try {
+                sessionStats = app.getSessionStats();
+                if (sessionStats != null) {
+                    displayData = sessionStats.getDisplayData();
+                }
+            } catch (exception) {
+                System.println("InlineSkatingView: Error getting session stats: " + exception.getErrorMessage());
+            }
+        }
         
         if (displayData == null) {
             drawNoDataMessage(dc);
@@ -139,7 +186,7 @@ class InlineSkatingView extends WatchUi.View {
         }
         
         // Session status indicator
-        var isActive = sessionStats.isActive();
+        var isActive = sessionStats != null ? sessionStats.isActive() : false;
         dc.setColor(isActive ? Graphics.COLOR_GREEN : Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
         dc.fillCircle(20, 30, 5);
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
@@ -163,7 +210,7 @@ class InlineSkatingView extends WatchUi.View {
         
         // Center - Heart rate (if available)
         var heartRate = displayData.get("heartRate");
-        if (heartRate > 0) {
+        if (heartRate != null && heartRate > 0) {
             dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
             dc.drawText(centerX, centerY + 5, Graphics.FONT_LARGE, heartRate.toString(), Graphics.TEXT_JUSTIFY_CENTER);
             dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
@@ -268,7 +315,7 @@ class InlineSkatingView extends WatchUi.View {
         
         // Heart rate metrics
         var heartRate = displayData.get("heartRate");
-        if (heartRate > 0) {
+        if (heartRate != null && heartRate > 0) {
             dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
             dc.drawText(20, yPos, Graphics.FONT_SMALL, "Heart Rate:", Graphics.TEXT_JUSTIFY_LEFT);
             dc.drawText(screenWidth - 20, yPos, Graphics.FONT_SMALL, heartRate.toString() + " bpm", Graphics.TEXT_JUSTIFY_RIGHT);
@@ -346,7 +393,7 @@ class InlineSkatingView extends WatchUi.View {
     }
 
     // Draw progress bar
-    function drawProgressBar(dc, x, y, width, height, progress , color )  {
+    function drawProgressBar(dc, x, y, width, height, progress, color) {
         // Background
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.fillRectangle(x, y, width, height);
@@ -376,6 +423,9 @@ class InlineSkatingView extends WatchUi.View {
             // GPS indicator
             dc.setColor(sensorStatus.get("gps") ? Graphics.COLOR_GREEN : Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
             dc.fillCircle(20, yPos, 3);
+            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(30, yPos - 5, Graphics.FONT_XTINY, "GPS", Graphics.TEXT_JUSTIFY_LEFT);
+            
             // Heart rate indicator
             dc.setColor(sensorStatus.get("heartRate") ? Graphics.COLOR_GREEN : Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
             dc.fillCircle(60, yPos, 3);
@@ -631,7 +681,7 @@ class InlineSkatingView extends WatchUi.View {
             
             // Heart rate (if available)
             var heartRate = displayData.get("heartRate");
-            if (heartRate > 0) {
+            if (heartRate != null && heartRate > 0) {
                 dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
                 dc.fillRectangle(centerX - 30, centerY - 10, 60, 35);
                 dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);

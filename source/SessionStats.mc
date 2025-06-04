@@ -9,15 +9,6 @@ using Toybox.Time;
 
 class SessionStats {
     
-    // Pomocnicze funkcje matematyczne
-    /* private function min(a, b) {
-        return a < b ? a : b;
-    }
-    
-    private function max(a, b) {
-        return a > b ? a : b;
-    }
- */
     // Basic session data
     var sessionStartTime;
     var sessionEndTime;
