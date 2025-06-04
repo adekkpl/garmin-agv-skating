@@ -1,9 +1,8 @@
 // Garmin Aggressive Inline Skating Tracker v2.0.0
 // Input Delegate for Main View
-
-import Toybox.WatchUi;
-import Toybox.System;
-import Toybox.Application;
+using Toybox.Lang;
+using Toybox.WatchUi;
+using Toybox.System;
 
 class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     
@@ -24,7 +23,8 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle START button press (primary action button)
-    function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+    //function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+    function onKey(keyEvent) {
         var key = keyEvent.getKey();
         
         switch (key) {
@@ -44,12 +44,12 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle SELECT button (center button)
-    function onSelect() as Boolean {
+    function onSelect() {
         return onEnterButton();
     }
 
     // Handle MENU button
-    function onMenu() as Boolean {
+    function onMenu() {
         System.println("InlineSkatingDelegate: Menu button pressed");
         
         // Show main menu
@@ -100,7 +100,7 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle START button press
-    function onStartButton() as Boolean {
+    function onStartButton() {
         System.println("InlineSkatingDelegate: START button pressed");
         
         // Prevent double-press
@@ -119,7 +119,7 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle ENTER/SELECT button
-    function onEnterButton() as Boolean {
+    function onEnterButton() {
         System.println("InlineSkatingDelegate: ENTER button pressed");
         
         // Switch display mode
@@ -131,7 +131,7 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle UP button
-    function onUpButton() as Boolean {
+    function onUpButton() {
         System.println("InlineSkatingDelegate: UP button pressed");
         
         // Cycle through display modes (forward)
@@ -143,7 +143,7 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle DOWN button  
-    function onDownButton() as Boolean {
+    function onDownButton() {
         System.println("InlineSkatingDelegate: DOWN button pressed");
         
         // Could implement reverse cycling through modes
@@ -156,7 +156,7 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle BACK/ESC button
-    function onBackButton() as Boolean {
+    function onBackButton() {
         System.println("InlineSkatingDelegate: BACK button pressed");
         
         // Check if session is active before allowing exit
@@ -174,18 +174,21 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle physical key events (for watches with physical buttons)
-    function onKeyPressed(keyEvent as WatchUi.KeyEvent) as Boolean {
+    //function onKeyPressed(keyEvent as WatchUi.KeyEvent) as Boolean {
+    function onKeyPressed(keyEvent) {
         return onKey(keyEvent);
     }
 
     // Handle key release events
-    function onKeyReleased(keyEvent as WatchUi.KeyEvent) as Boolean {
+    //function onKeyReleased(keyEvent as WatchUi.KeyEvent) as Boolean {
+    function onKeyReleased(keyEvent) {
         // Could implement long-press functionality here
         return false;
     }
 
     // Handle swipe gestures (for touchscreen devices)
-    function onSwipe(swipeEvent as WatchUi.SwipeEvent) as Boolean {
+    //function onSwipe(swipeEvent as WatchUi.SwipeEvent) as Boolean {
+    function onSwipe(swipeEvent) {
         var direction = swipeEvent.getDirection();
         
         switch (direction) {
@@ -203,7 +206,7 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle left swipe - next display mode
-    function onSwipeLeft() as Boolean {
+    function onSwipeLeft() {
         System.println("InlineSkatingDelegate: Swipe left");
         
         if (view != null) {
@@ -214,7 +217,7 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle right swipe - previous display mode
-    function onSwipeRight() as Boolean {
+    function onSwipeRight() {
         System.println("InlineSkatingDelegate: Swipe right");
         
         // Could implement reverse mode switching
@@ -226,13 +229,13 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle up swipe - show menu
-    function onSwipeUp() as Boolean {
+    function onSwipeUp() {
         System.println("InlineSkatingDelegate: Swipe up");
         return onMenu();
     }
 
     // Handle down swipe - toggle session
-    function onSwipeDown() as Boolean {
+    function onSwipeDown(){
         System.println("InlineSkatingDelegate: Swipe down");
         
         if (view != null) {
@@ -243,7 +246,8 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle tap events (for touchscreen)
-    function onTap(clickEvent as WatchUi.ClickEvent) as Boolean {
+    //function onTap(clickEvent as WatchUi.ClickEvent) as Boolean {
+    function onTap(clickEvent) {
         var coordinates = clickEvent.getCoordinates();
         System.println("InlineSkatingDelegate: Tap at " + coordinates[0] + "," + coordinates[1]);
         
@@ -253,7 +257,8 @@ class InlineSkatingDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle touch events
-    function onSelectable(selectableEvent as WatchUi.SelectableEvent) as Boolean {
+    //function onSelectable(selectableEvent as WatchUi.SelectableEvent) as Boolean {
+    function onSelectable(selectableEvent) {
         // Handle selectable UI elements if needed
         return false;
     }
@@ -462,15 +467,15 @@ class ExitConfirmationDelegate extends WatchUi.ConfirmationDelegate {
         ConfirmationDelegate.initialize();
     }
 
-    function onResponse(response as WatchUi.Response) as Boolean {
-        if (response == WatchUi.RESPONSE_YES) {
+    //function onResponse(response as WatchUi.Response) as Boolean {
+    function onResponse(response) { 
+        if (response == WatchUi.CONFIRM_YES) {
             // User confirmed - stop session and exit
             var app = Application.getApp();
             if (app != null) {
                 app.stopSession();
             }
             System.exit();
-            return true;
         } else {
             // User cancelled - just close dialog
             WatchUi.popView(WatchUi.SLIDE_UP);
@@ -486,8 +491,9 @@ class ResetStatsDelegate extends WatchUi.ConfirmationDelegate {
         ConfirmationDelegate.initialize();
     }
 
-    function onResponse(response as WatchUi.Response) as Boolean {
-        if (response == WatchUi.RESPONSE_YES) {
+    //function onResponse(response as WatchUi.Response) as Boolean {
+    function onResponse(response) {
+        if (response == WatchUi.CONFIRM_YES) {
             // User confirmed - reset all statistics
             var app = Application.getApp();
             var sessionStats = app != null ? app.getSessionStats() : null;

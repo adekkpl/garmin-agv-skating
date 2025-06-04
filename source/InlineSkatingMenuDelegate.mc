@@ -1,7 +1,9 @@
+// InlineSkatingMenuDelegate.mc
+using Toybox.Lang;
 using Toybox.WatchUi;
 using Toybox.System;
 
-class InlineSkatingMenuDelegate extends WatchUi.MenuInputDelegate {
+class SkatingMenuDelegate extends WatchUi.MenuInputDelegate {
 
     function initialize() {
         MenuInputDelegate.initialize();

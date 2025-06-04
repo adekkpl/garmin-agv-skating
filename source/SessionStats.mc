@@ -1,11 +1,23 @@
+// SessionStats.mc
 // Garmin Aggressive Inline Skating Tracker v2.0.0
 // Session Statistics Management
+using Toybox.Lang;
+using Toybox.System;
+using Toybox.Math;
+using Toybox.Time;
 
-import Toybox.System;
-import Toybox.Math;
 
 class SessionStats {
     
+    // Pomocnicze funkcje matematyczne
+    /* private function min(a, b) {
+        return a < b ? a : b;
+    }
+    
+    private function max(a, b) {
+        return a > b ? a : b;
+    }
+ */
     // Basic session data
     var sessionStartTime;
     var sessionEndTime;
@@ -50,14 +62,24 @@ class SessionStats {
         System.println("SessionStats: Initializing session statistics");
         
         // Initialize history arrays
-        tricksHistory = new Array[MAX_TRICK_HISTORY];
-        grindsHistory = new Array[MAX_TRICK_HISTORY];
-        jumpsHistory = new Array[MAX_TRICK_HISTORY];
+        tricksHistory = [];
+        grindsHistory = [];
+        jumpsHistory = [];
+        for (var i = 0; i < MAX_TRICK_HISTORY; i++) {
+            tricksHistory.add(null);
+            grindsHistory.add(null);
+            jumpsHistory.add(null);
+        }
         
         // Initialize sample arrays
-        speedSamples = new Array[MAX_SAMPLES];
-        heartRateSamples = new Array[MAX_SAMPLES];
-        distanceCheckpoints = new Array[MAX_SAMPLES];
+        speedSamples = [];
+        heartRateSamples = [];
+        distanceCheckpoints = [];
+        for (var i = 0; i < MAX_SAMPLES; i++) {
+            speedSamples.add(0.0);
+            heartRateSamples.add(0);
+            distanceCheckpoints.add(0.0);
+        }
         
         // Initialize arrays with default values
         for (var i = 0; i < MAX_TRICK_HISTORY; i++) {
@@ -154,7 +176,7 @@ class SessionStats {
     }
 
     // Add a detected trick to statistics
-    function addTrick(trickType as String, trickData as Dictionary) as Void {
+    function addTrick(trickType, trickData) {
         if (!isSessionActive) {
             return;
         }
@@ -177,7 +199,7 @@ class SessionStats {
     }
 
     // Add grind-specific data
-    function addGrind(grindData as Dictionary) as Void {
+    function addGrind(grindData){
         totalGrinds++;
         
         var duration = grindData.get("grindDuration");
@@ -202,7 +224,7 @@ class SessionStats {
     }
 
     // Add jump-specific data
-    function addJump(jumpData as Dictionary) as Void {
+    function addJump(jumpData) {
         totalJumps++;
         
         // Add to jumps history
@@ -210,7 +232,7 @@ class SessionStats {
     }
 
     // Update performance metrics with sensor data
-    function updatePerformanceMetrics(sensorData as Dictionary) as Void {
+    function updatePerformanceMetrics(sensorData) {
         if (!isSessionActive || sensorData == null) {
             return;
         }
@@ -232,7 +254,7 @@ class SessionStats {
     }
 
     // Update GPS-based metrics (speed, distance)
-    function updateGpsMetrics(gpsData as Dictionary) as Void {
+    function updateGpsMetrics(gpsData) {
         var currentSpeed = gpsData.get("speed");
         var currentPosition = {
             "lat" => gpsData.get("latitude"),
@@ -259,7 +281,7 @@ class SessionStats {
     }
 
     // Update heart rate metrics
-    function updateHeartRateMetrics(heartRateData as Dictionary) as Void {
+    function updateHeartRateMetrics(heartRateData) {
         var currentHeartRate = heartRateData.get("heartRate");
         
         if (currentHeartRate != null && currentHeartRate > 0) {
@@ -283,7 +305,7 @@ class SessionStats {
     }
 
     // Calculate distance between two GPS coordinates
-    function calculateDistance(pos1 as Dictionary, pos2 as Dictionary) as Float {
+    function calculateDistance(pos1, pos2) {
         var lat1 = pos1.get("lat") * Math.PI / 180.0;
         var lon1 = pos1.get("lon") * Math.PI / 180.0;
         var lat2 = pos2.get("lat") * Math.PI / 180.0;
@@ -304,7 +326,7 @@ class SessionStats {
     }
 
     // Add value to circular sample array
-    function addToSampleArray(array as Array, value as Number or Float) as Void {
+    function addToSampleArray(array, value) {
         for (var i = 0; i < MAX_SAMPLES - 1; i++) {
             array[i] = array[i + 1];
         }
@@ -312,7 +334,7 @@ class SessionStats {
     }
 
     // Calculate average of sample array
-    function calculateArrayAverage(array as Array) as Float {
+    function calculateArrayAverage(array) {
         var sum = 0.0;
         var count = 0;
         
@@ -327,7 +349,7 @@ class SessionStats {
     }
 
     // Add item to history array
-    function addToHistory(historyArray as Array, item as Dictionary) as Void {
+    function addToHistory(historyArray, item) {
         for (var i = 0; i < MAX_TRICK_HISTORY - 1; i++) {
             historyArray[i] = historyArray[i + 1];
         }
@@ -417,7 +439,7 @@ class SessionStats {
     }
 
     // Unlock achievement
-    function unlockAchievement(title as String, description as String) as Void {
+    function unlockAchievement(title, description) {
         var achievement = {
             "title" => title,
             "description" => description,
@@ -444,7 +466,7 @@ class SessionStats {
     }
 
     // Get current session time in milliseconds
-    function getSessionTime() as Number {
+    function getSessionTime() {
         if (!isSessionActive || sessionStartTime == null) {
             return 0;
         }
@@ -454,12 +476,12 @@ class SessionStats {
     }
 
     // Get session time in minutes
-    function getSessionTimeMinutes() as Float {
+    function getSessionTimeMinutes() {
         return getSessionTime().toFloat() / 60000.0;
     }
 
     // Get session time formatted as string
-    function getSessionTimeString() as String {
+    function getSessionTimeString() {
         var totalMs = getSessionTime();
         var hours = (totalMs / 3600000).toNumber();
         var minutes = ((totalMs % 3600000) / 60000).toNumber();
@@ -473,7 +495,7 @@ class SessionStats {
     }
 
     // Get comprehensive session data
-    function getSessionData() as Dictionary {
+    function getSessionData() {
         return {
             // Basic session info
             "startTime" => sessionStartTime,
@@ -511,7 +533,7 @@ class SessionStats {
     }
 
     // Get real-time display data for UI
-    function getDisplayData() as Dictionary {
+    function getDisplayData() {
         return {
             "tricks" => totalTricks,
             "grinds" => totalGrinds,
@@ -528,9 +550,9 @@ class SessionStats {
     }
 
     // Get recent tricks for UI display
-    function getRecentTricks(count as Number) as Array {
+    function getRecentTricks(count) {
         var recentTricks = [];
-        var startIndex = Math.max(0, MAX_TRICK_HISTORY - count);
+        var startIndex = max(0, MAX_TRICK_HISTORY - count);
         
         for (var i = startIndex; i < MAX_TRICK_HISTORY; i++) {
             if (tricksHistory[i] != null) {
@@ -542,7 +564,7 @@ class SessionStats {
     }
 
     // Format duration in milliseconds to readable string
-    function formatDuration(durationMs as Number) as String {
+    function formatDuration(durationMs) {
         if (durationMs < 1000) {
             return (durationMs / 100).toNumber().format("%d") + "." + (durationMs % 100).format("%02d") + "s";
         } else {
@@ -552,7 +574,7 @@ class SessionStats {
     }
 
     // Format distance in meters to readable string
-    function formatDistance(distanceM as Float) as String {
+    function formatDistance(distanceM) {
         if (distanceM < 1000) {
             return distanceM.toNumber().format("%d") + "m";
         } else {
@@ -562,13 +584,13 @@ class SessionStats {
     }
 
     // Format speed in m/s to km/h string
-    function formatSpeed(speedMs as Float) as String {
+    function formatSpeed(speedMs) {
         var speedKmh = speedMs * 3.6;
         return speedKmh.format("%.1f") + " km/h";
     }
 
     // Log session summary
-    function logSessionSummary() as Void {
+    function logSessionSummary() {
         System.println("=== SESSION SUMMARY ===");
         System.println("Duration: " + getSessionTimeString());
         System.println("Total Tricks: " + totalTricks + " (Grinds: " + totalGrinds + ", Jumps: " + totalJumps + ")");
@@ -584,7 +606,7 @@ class SessionStats {
     }
 
     // Set session goals
-    function setSessionGoals(goals as Dictionary) as Void {
+    function setSessionGoals(goals) {
         if (goals.hasKey("targetTricks")) {
             sessionGoals.put("targetTricks", goals.get("targetTricks"));
         }
@@ -602,41 +624,41 @@ class SessionStats {
     }
 
     // Get session goals
-    function getSessionGoals() as Dictionary {
+    function getSessionGoals() {
         return sessionGoals;
     }
 
     // Check if session is active
-    function isActive() as Boolean {
+    function isActive() {
         return isSessionActive;
     }
 
     // Get performance rating (0-100)
-    function getPerformanceRating() as Number {
+    function getPerformanceRating() {
         var rating = 0;
         
         // Tricks performance (40 points max)
-        rating += Math.min(40, totalTricks * 4);
+        rating += min(40, totalTricks * 4);
         
         // Speed performance (20 points max)
         if (maxSpeed > 5.56) { // 20 km/h
-            rating += Math.min(20, (maxSpeed - 5.56) * 10);
+            rating += min(20, (maxSpeed - 5.56) * 10);
         }
         
         // Endurance performance (20 points max)
         var sessionHours = getSessionTimeMinutes() / 60.0;
-        rating += Math.min(20, sessionHours * 20);
+        rating += min(20, sessionHours * 20);
         
         // Grind performance (20 points max)
         if (longestGrindDuration > 1000) {
-            rating += Math.min(20, (longestGrindDuration - 1000) / 200);
+            rating += min(20, (longestGrindDuration - 1000) / 200);
         }
         
-        return Math.min(100, rating).toNumber();
+        return min(100, rating).toNumber();
     }
 
     // Export session data for sharing/saving
-    function exportSessionData() as Dictionary {
+    function exportSessionData() {
         var exportData = getSessionData();
         
         // Add detailed trick history

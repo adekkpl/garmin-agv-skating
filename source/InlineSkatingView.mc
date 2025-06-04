@@ -1,20 +1,21 @@
+//InlineSkatingView.mc
 // Garmin Aggressive Inline Skating Tracker v2.0.0
 // Main Application View
+using Toybox.Lang;
+using Toybox.WatchUi;
+using Toybox.Graphics;
+using Toybox.System;
+using Toybox.Application;
+using Toybox.Math;
 
-import Toybox.WatchUi;
-import Toybox.Graphics;
-import Toybox.System;
-import Toybox.Application;
 
 class InlineSkatingView extends WatchUi.View {
     
-    // Display modes
-    enum DisplayMode {
-        MODE_MAIN,
-        MODE_TRICKS,
-        MODE_PERFORMANCE,
-        MODE_SESSION
-    }
+    // Display modes - jako stałe klasowe
+    const MODE_MAIN = 0;
+    const MODE_TRICKS = 1;
+    const MODE_PERFORMANCE = 2;
+    const MODE_SESSION = 3;
     
     var currentDisplayMode;
     var app;
@@ -35,13 +36,17 @@ class InlineSkatingView extends WatchUi.View {
     var achievementShowTime = 0;
     var lastAchievement;
     
-    function initialize() {
+    /* function initialize() {
         View.initialize();
         System.println("InlineSkatingView: Initializing main view");
         
         currentDisplayMode = DisplayMode.MODE_MAIN;
         app = Application.getApp();
         lastUpdateTime = System.getTimer();
+    } */
+   function initialize() {
+        View.initialize();
+        currentDisplayMode = MODE_MAIN;
     }
 
     // Load resources and setup layout
@@ -90,16 +95,16 @@ class InlineSkatingView extends WatchUi.View {
         
         // Draw content based on current display mode
         switch (currentDisplayMode) {
-            case DisplayMode.MODE_MAIN:
+            case MODE_MAIN:
                 drawMainScreen(dc);
                 break;
-            case DisplayMode.MODE_TRICKS:
+            case MODE_TRICKS:
                 drawTricksScreen(dc);
                 break;
-            case DisplayMode.MODE_PERFORMANCE:
+            case MODE_PERFORMANCE:
                 drawPerformanceScreen(dc);
                 break;
-            case DisplayMode.MODE_SESSION:
+            case MODE_SESSION:
                 drawSessionScreen(dc);
                 break;
         }
@@ -335,20 +340,19 @@ class InlineSkatingView extends WatchUi.View {
         // Achievements
         var achievementsCount = sessionData.get("achievementsCount");
         if (achievementsCount > 0) {
-            dc.setColor(Graphics.COLOR_GOLD, Graphics.COLOR_TRANSPARENT);
+            dc.setColor(Graphics.COLOR_YELLOW, Graphics.COLOR_TRANSPARENT);
             dc.drawText(20, yPos, Graphics.FONT_SMALL, "Achievements: " + achievementsCount, Graphics.TEXT_JUSTIFY_LEFT);
         }
     }
 
     // Draw progress bar
-    function drawProgressBar(dc as Graphics.Dc, x as Number, y as Number, width as Number, height as Number, 
-                           progress as Float, color as Number) as Void {
+    function drawProgressBar(dc, x, y, width, height, progress , color )  {
         // Background
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.fillRectangle(x, y, width, height);
         
         // Progress fill
-        var fillWidth = (width * Math.min(progress, 100) / 100).toNumber();
+        var fillWidth = (width * min(progress, 100) / 100).toNumber();
         dc.setColor(color, Graphics.COLOR_TRANSPARENT);
         dc.fillRectangle(x, y, fillWidth, height);
         
@@ -383,16 +387,16 @@ class InlineSkatingView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         var modeText = "";
         switch (currentDisplayMode) {
-            case DisplayMode.MODE_MAIN:
+            case MODE_MAIN:
                 modeText = "MAIN";
                 break;
-            case DisplayMode.MODE_TRICKS:
+            case MODE_TRICKS:
                 modeText = "TRICKS";
                 break;
-            case DisplayMode.MODE_PERFORMANCE:
+            case MODE_PERFORMANCE:
                 modeText = "PERF";
                 break;
-            case DisplayMode.MODE_SESSION:
+            case MODE_SESSION:
                 modeText = "SESSION";
                 break;
         }
@@ -416,7 +420,7 @@ class InlineSkatingView extends WatchUi.View {
         // Achievement notification
         if (achievementShowTime > 0 && lastAchievement != null) {
             var bgColor = Graphics.COLOR_DK_BLUE;
-            var textColor = Graphics.COLOR_GOLD;
+            var textColor = Graphics.COLOR_YELLOW;
             
             // Achievement banner
             dc.setColor(bgColor, Graphics.COLOR_TRANSPARENT);
@@ -446,7 +450,7 @@ class InlineSkatingView extends WatchUi.View {
     }
 
     // Sensor data update callback
-    function onSensorDataUpdate(sensorData as Dictionary) as Void {
+    function onSensorDataUpdate(sensorData) {
         // Update session statistics with new sensor data
         var sessionStats = app != null ? app.getSessionStats() : null;
         if (sessionStats != null && sessionStats.isActive()) {
@@ -465,7 +469,7 @@ class InlineSkatingView extends WatchUi.View {
     }
 
     // Trick detection callback
-    function onTrickDetected(trickType as String, trickData as Dictionary) as Void {
+    function onTrickDetected(trickType, trickData) {
         System.println("InlineSkatingView: Trick detected - " + trickType);
         
         // Start trick animation
@@ -512,17 +516,17 @@ class InlineSkatingView extends WatchUi.View {
     // Change display mode
     function switchDisplayMode() as Void {
         switch (currentDisplayMode) {
-            case DisplayMode.MODE_MAIN:
-                currentDisplayMode = DisplayMode.MODE_TRICKS;
+            case MODE_MAIN:
+                currentDisplayMode = MODE_TRICKS;
                 break;
-            case DisplayMode.MODE_TRICKS:
-                currentDisplayMode = DisplayMode.MODE_PERFORMANCE;
+            case MODE_TRICKS:
+                currentDisplayMode = MODE_PERFORMANCE;
                 break;
-            case DisplayMode.MODE_PERFORMANCE:
-                currentDisplayMode = DisplayMode.MODE_SESSION;
+            case MODE_PERFORMANCE:
+                currentDisplayMode = MODE_SESSION;
                 break;
-            case DisplayMode.MODE_SESSION:
-                currentDisplayMode = DisplayMode.MODE_MAIN;
+            case MODE_SESSION:
+                currentDisplayMode = MODE_MAIN;
                 break;
         }
         
@@ -533,15 +537,15 @@ class InlineSkatingView extends WatchUi.View {
     }
 
     // Get current display mode as string
-    function getCurrentModeString() as String {
+    function getCurrentModeString() {
         switch (currentDisplayMode) {
-            case DisplayMode.MODE_MAIN:
+            case MODE_MAIN:
                 return "MAIN";
-            case DisplayMode.MODE_TRICKS:
+            case MODE_TRICKS:
                 return "TRICKS";
-            case DisplayMode.MODE_PERFORMANCE:
+            case MODE_PERFORMANCE:
                 return "PERFORMANCE";
-            case DisplayMode.MODE_SESSION:
+            case MODE_SESSION:
                 return "SESSION";
             default:
                 return "UNKNOWN";
@@ -570,7 +574,7 @@ class InlineSkatingView extends WatchUi.View {
     }
 
     // Get current session status for delegate
-    function getSessionStatus() as Boolean {
+    function getSessionStatus() {
         var sessionStats = app != null ? app.getSessionStats() : null;
         return sessionStats != null ? sessionStats.isActive() : false;
     }
@@ -582,26 +586,26 @@ class InlineSkatingView extends WatchUi.View {
     }
 
     // Get display mode for delegate
-    function getCurrentDisplayMode() as DisplayMode {
+    function getCurrentDisplayMode() {
         return currentDisplayMode;
     }
 
     // Update performance optimization
-    function onPartialUpdate(dc as Graphics.Dc) as Void {
+    function onPartialUpdate(dc) {
         // Only update changed elements for better performance
         if (dataChanged) {
             // Update only the data areas that changed
             switch (currentDisplayMode) {
-                case DisplayMode.MODE_MAIN:
+                case MODE_MAIN:
                     updateMainScreenData(dc);
                     break;
-                case DisplayMode.MODE_TRICKS:
+                case MODE_TRICKS:
                     updateTricksScreenData(dc);
                     break;
-                case DisplayMode.MODE_PERFORMANCE:
+                case MODE_PERFORMANCE:
                     updatePerformanceScreenData(dc);
                     break;
-                case DisplayMode.MODE_SESSION:
+                case MODE_SESSION:
                     updateSessionScreenData(dc);
                     break;
             }
@@ -650,10 +654,4 @@ class InlineSkatingView extends WatchUi.View {
         // Update session screen dynamic data
         // Implementation would update progress bars and counters
     }
-}TRANSPARENT);
-            dc.drawText(30, yPos - 5, Graphics.FONT_XTINY, "GPS", Graphics.TEXT_JUSTIFY_LEFT);
-            
-            // Heart rate indicator
-            dc.setColor(sensorStatus.get("heartRate") ? Graphics.COLOR_GREEN : Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
-            dc.fillCircle(60, yPos, 3);
-            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_
+}

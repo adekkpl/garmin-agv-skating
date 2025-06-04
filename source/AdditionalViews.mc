@@ -1,9 +1,11 @@
 // Garmin Aggressive Inline Skating Tracker v2.0.0
 // Additional Views (About, Statistics, etc.)
+using Toybox.Lang;
+using Toybox.WatchUi;
+using Toybox.Graphics;
+using Toybox.System;
+using Toybox.Math;
 
-import Toybox.WatchUi;
-import Toybox.Graphics;
-import Toybox.System;
 
 // About view showing app information
 class AboutView extends WatchUi.View {
@@ -12,18 +14,18 @@ class AboutView extends WatchUi.View {
     var scrollOffset = 0;
     var maxScroll = 0;
     
-    function initialize(text as String) {
+    function initialize(text) {
         View.initialize();
         aboutText = text;
     }
 
-    function onLayout(dc as Graphics.Dc) as Void {
+    function onLayout(dc) {
         // Calculate max scroll based on text height
         var textHeight = dc.getTextDimensions(aboutText, Graphics.FONT_TINY)[1];
-        maxScroll = Math.max(0, textHeight - dc.getHeight() + 40);
+        maxScroll = max(0, textHeight - dc.getHeight() + 40);
     }
 
-    function onUpdate(dc as Graphics.Dc) as Void {
+    function onUpdate(dc){
         // Clear screen
         dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
         dc.clear();
@@ -49,13 +51,13 @@ class AboutView extends WatchUi.View {
         View.onUpdate(dc);
     }
     
-    function scrollUp() as Void {
-        scrollOffset = Math.max(0, scrollOffset - 20);
+    function scrollUp() {
+        scrollOffset = max(0, scrollOffset - 20);
         WatchUi.requestUpdate();
     }
     
-    function scrollDown() as Void {
-        scrollOffset = Math.min(maxScroll, scrollOffset + 20);
+    function scrollDown() {
+        scrollOffset = min(maxScroll, scrollOffset + 20);
         WatchUi.requestUpdate();
     }
 }
@@ -73,7 +75,7 @@ class AboutDelegate extends WatchUi.BehaviorDelegate {
         view = aboutView;
     }
 
-    function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+    function onKey(keyEvent) {
         var key = keyEvent.getKey();
         
         switch (key) {
@@ -95,7 +97,7 @@ class AboutDelegate extends WatchUi.BehaviorDelegate {
         }
     }
     
-    function onSwipe(swipeEvent as WatchUi.SwipeEvent) as Boolean {
+    function onSwipe(swipeEvent) {
         var direction = swipeEvent.getDirection();
         
         switch (direction) {
@@ -246,7 +248,8 @@ class StatisticsView extends WatchUi.View {
         drawStatLine(dc, "Longest Session:", "00:00:00", yPos);
     }
     
-    function drawStatLine(dc as Graphics.Dc, label as String, value as String, y as Number) as Void {
+    //function drawStatLine(dc as Graphics.Dc, label as String, value as String, y as Number) as Void {
+    function drawStatLine(dc, label, value, y) {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(10, y, Graphics.FONT_TINY, label, Graphics.TEXT_JUSTIFY_LEFT);
         dc.drawText(dc.getWidth() - 10, y, Graphics.FONT_TINY, value, Graphics.TEXT_JUSTIFY_RIGHT);
@@ -276,7 +279,7 @@ class StatisticsDelegate extends WatchUi.BehaviorDelegate {
         view = statsView;
     }
 
-    function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+    function onKey(keyEvent) {
         var key = keyEvent.getKey();
         
         switch (key) {
@@ -303,7 +306,7 @@ class StatisticsDelegate extends WatchUi.BehaviorDelegate {
         }
     }
     
-    function onSwipe(swipeEvent as WatchUi.SwipeEvent) as Boolean {
+    function onSwipe(swipeEvent) {
         var direction = swipeEvent.getDirection();
         
         switch (direction) {
@@ -333,7 +336,7 @@ class CustomConfirmationView extends WatchUi.View {
     var yesCallback;
     var noCallback;
     
-    function initialize(msg as String, yesCb as Method, noCb as Method) {
+    function initialize(msg, yesCb, noCb) {
         View.initialize();
         message = msg;
         yesCallback = yesCb;
@@ -381,7 +384,7 @@ class CustomConfirmationDelegate extends WatchUi.BehaviorDelegate {
         view = confirmView;
     }
 
-    function onKey(keyEvent as WatchUi.KeyEvent) as Boolean {
+    function onKey(keyEvent) {
         var key = keyEvent.getKey();
         
         switch (key) {

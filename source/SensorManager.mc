@@ -1,10 +1,12 @@
+// SensorManager.mc
 // Garmin Aggressive Inline Skating Tracker v2.0.0
 // Sensor Management Class
 
-import Toybox.Sensor;
-import Toybox.Position;
-import Toybox.System;
-import Toybox.Timer;
+using Toybox.Lang;
+using Toybox.System;
+using Toybox.Math;
+using Toybox.Sensor;
+using Toybox.Position;
 
 class SensorManager {
     
@@ -54,7 +56,7 @@ class SensorManager {
     }
 
     // Initialize data storage structures
-    function initializeDataStorage() as Void {
+    function initializeDataStorage() {
         currentAccelData = {
             "x" => 0.0,
             "y" => 0.0, 
@@ -83,9 +85,9 @@ class SensorManager {
         };
         
         // Initialize history arrays
-        accelHistory = new Array[HISTORY_SIZE];
-        altitudeHistory = new Array[HISTORY_SIZE];
-        gpsHistory = new Array[HISTORY_SIZE];
+        accelHistory = new [HISTORY_SIZE];
+        altitudeHistory = new [HISTORY_SIZE];
+        gpsHistory = new [HISTORY_SIZE];
         
         for (var i = 0; i < HISTORY_SIZE; i++) {
             accelHistory[i] = {"x" => 0.0, "y" => 0.0, "z" => 0.0, "t" => 0};
@@ -95,7 +97,7 @@ class SensorManager {
     }
 
     // Check which sensors are available on this device
-    function checkSensorAvailability() as Void {
+    function checkSensorAvailability(){
         var sensorInfo = Sensor.getInfo();
         
         hasAccelerometer = (sensorInfo has :accel) && (sensorInfo.accel != null);
@@ -108,7 +110,7 @@ class SensorManager {
     }
 
     // Initialize sensor listeners
-    function initializeSensorListeners() as Void {
+    function initializeSensorListeners() {
         try {
             if (hasAccelerometer) {
                 accelListener = new AccelerometerListener(method(:onAccelerometerData));
@@ -132,7 +134,7 @@ class SensorManager {
     }
 
     // Start all available sensors
-    function startSensors() as Void {
+    function startSensors() {
         System.println("SensorManager: Starting sensors");
         
         try {
@@ -153,9 +155,10 @@ class SensorManager {
                 });
             }
             
-            if (hasGps && positionListener != null) {
+            // TODO: Enable GPS if needed
+           /*  if (hasGps && positionListener != null) {
                 Position.enableLocationEvents(Position.LOCATION_CONTINUOUS, method(:onPositionData));
-            }
+            } */
             
             if (hasHeartRate && heartRateListener != null) {
                 Sensor.registerSensorDataListener(heartRateListener, {
@@ -197,7 +200,7 @@ class SensorManager {
     }
 
     // Accelerometer data callback
-    function onAccelerometerData(sensorData as Sensor.SensorData) as Void {
+    function onAccelerometerData(sensorData) {
         if (sensorData.accelerometerData != null) {
             var accelData = sensorData.accelerometerData;
             var timestamp = System.getTimer();
@@ -218,7 +221,7 @@ class SensorManager {
     }
 
     // Barometer data callback
-    function onBarometerData(sensorData as Sensor.SensorData) as Void {
+    function onBarometerData(sensorData) {
         if (sensorData.pressure != null) {
             var timestamp = System.getTimer();
             var altitude = pressureToAltitude(sensorData.pressure);
@@ -236,7 +239,7 @@ class SensorManager {
     }
 
     // GPS position data callback
-    function onPositionData(info as Position.Info) as Void {
+    function onPositionData(info) {
         if (info != null && info.position != null) {
             var timestamp = System.getTimer();
             
@@ -258,7 +261,7 @@ class SensorManager {
     }
 
     // Heart rate data callback
-    function onHeartRateData(sensorData as Sensor.SensorData) as Void {
+    function onHeartRateData(sensorData) {
         if (sensorData.heartRate != null) {
             currentHeartRateData["heartRate"] = sensorData.heartRate;
             currentHeartRateData["timestamp"] = System.getTimer();
@@ -266,7 +269,7 @@ class SensorManager {
     }
 
     // Add data to circular history buffer
-    function addToHistory(historyArray as Array, data as Dictionary) as Void {
+    function addToHistory(historyArray, data) {
         // Simple circular buffer implementation
         for (var i = 0; i < HISTORY_SIZE - 1; i++) {
             historyArray[i] = historyArray[i + 1];
@@ -275,7 +278,7 @@ class SensorManager {
     }
 
     // Convert pressure to altitude (simple approximation)
-    function pressureToAltitude(pressure as Float) as Float {
+    function pressureToAltitude(pressure) {
         // Standard barometric formula approximation
         var seaLevelPressure = 101325.0; // Pa
         var altitudeMeters = (1.0 - Math.pow(pressure / seaLevelPressure, 0.1903)) * 44307.69;
@@ -290,7 +293,7 @@ class SensorManager {
     }
 
     // Get current sensor data snapshot
-    function getCurrentSensorData() as Dictionary {
+    function getCurrentSensorData() {
         return {
             "accel" => currentAccelData,
             "barometer" => currentBarometerData,
@@ -301,7 +304,7 @@ class SensorManager {
     }
 
     // Get sensor history data
-    function getSensorHistory() as Dictionary {
+    function getSensorHistory() {
         return {
             "accel" => accelHistory,
             "altitude" => altitudeHistory,
@@ -310,12 +313,12 @@ class SensorManager {
     }
 
     // Set data update callback
-    function setDataUpdateCallback(callback as Method) as Void {
+    function setDataUpdateCallback(callback) {
         dataUpdateCallback = callback;
     }
 
     // Get sensor availability status
-    function getSensorStatus() as Dictionary {
+    function getSensorStatus() {
         return {
             "accelerometer" => hasAccelerometer,
             "barometer" => hasBarometer,
@@ -329,7 +332,7 @@ class SensorManager {
 class AccelerometerListener {
     var callback;
     
-    function initialize(callbackMethod as Method) {
+    function initialize(callbackMethod) {
         callback = callbackMethod;
     }
 }
@@ -337,7 +340,7 @@ class AccelerometerListener {
 class BarometerListener {
     var callback;
     
-    function initialize(callbackMethod as Method) {
+    function initialize(callbackMethod) {
         callback = callbackMethod;
     }
 }
@@ -345,7 +348,7 @@ class BarometerListener {
 class PositionListener {
     var callback;
     
-    function initialize(callbackMethod as Method) {
+    function initialize(callbackMethod) {
         callback = callbackMethod;
     }
 }
@@ -353,7 +356,7 @@ class PositionListener {
 class HeartRateListener {
     var callback;
     
-    function initialize(callbackMethod as Method) {
+    function initialize(callbackMethod) {
         callback = callbackMethod;
     }
 }

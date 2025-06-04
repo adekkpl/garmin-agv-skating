@@ -1,9 +1,10 @@
+// AggressiveSkatingApp.mc
 // Garmin Aggressive Inline Skating Tracker v2.0.0
 // Main Application Class
-
-import Toybox.Application;
-import Toybox.WatchUi;
-import Toybox.System;
+using Toybox.Lang;
+using Toybox.Application;
+using Toybox.System;
+using Toybox.WatchUi;
 
 class InlineSkatingApp extends Application.AppBase {
     
@@ -17,24 +18,24 @@ class InlineSkatingApp extends Application.AppBase {
     }
 
     // Called when application starts
-    function onStart(state as Dictionary?) as Void {
+    //function onStart(state as Dictionary?) as Void {
+    function onStart(state) {
         System.println("InlineSkatingApp: Starting application v2.0.0");
         
         // Initialize core components
         initializeComponents();
         
         // Restore session state if available
-        if (state != null && state.hasKey("sessionActive")) {
-            isSessionActive = state.get("sessionActive");
-            if (isSessionActive) {
-                System.println("InlineSkatingApp: Restoring active session");
-                resumeSession();
-            }
+        if (state != null && state.hasKey("sessionActive") && state.get("sessionActive") == true) {
+            isSessionActive = true;
+            System.println("InlineSkatingApp: Restoring active session");
+            resumeSession();
         }
     }
 
     // Called when application is being stopped
-    function onStop(state as Dictionary?) as Void {
+    //function onStop(state as Dictionary?) as Void {
+    function onStop(state) {
         System.println("InlineSkatingApp: Stopping application");
         
         // Save current state
@@ -57,12 +58,13 @@ class InlineSkatingApp extends Application.AppBase {
     }
 
     // Return the initial view and input delegate
-    function getInitialView() as Array<WatchUi.Views or WatchUi.InputDelegates>? {
+    //function getInitialView() as Array<WatchUi.Views or WatchUi.InputDelegates>? {
+    function getInitialView() {
         return [ new InlineSkatingView(), new InlineSkatingDelegate() ];
     }
 
     // Initialize all application components
-    function initializeComponents() as Void {
+    function initializeComponents() {
         try {
             // Initialize sensor management
             sensorManager = new SensorManager();
@@ -187,7 +189,7 @@ class InlineSkatingApp extends Application.AppBase {
     }
 
     // Get current session status
-    function getSessionStatus() as Boolean {
+    function getSessionStatus()  {
         return isSessionActive;
     }
 
@@ -207,7 +209,7 @@ class InlineSkatingApp extends Application.AppBase {
     }
 
     // Handle trick detection callback
-    function onTrickDetected(trickType as String, trickData as Dictionary) as Void {
+    function onTrickDetected(trickType, trickData) {
         if (sessionStats != null) {
             sessionStats.addTrick(trickType, trickData);
         }
@@ -225,7 +227,7 @@ class InlineSkatingApp extends Application.AppBase {
     }
 
     // Get application version
-    function getVersion() as String {
+    function getVersion() {
         return "2.0.0";
     }
 }
