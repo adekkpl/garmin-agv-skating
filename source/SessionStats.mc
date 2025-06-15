@@ -32,14 +32,14 @@ class SessionStats {
     var caloriesBurned = 0;
     
     // Detailed trick data storage
-    var tricksHistory;
-    var grindsHistory;
-    var jumpsHistory;
+    var tricksHistory as Lang.Array;
+    var grindsHistory as Lang.Array;
+    var jumpsHistory as Lang.Array;
     
     // Real-time tracking
-    var speedSamples;
-    var heartRateSamples;
-    var distanceCheckpoints;
+    var speedSamples as Lang.Array<Lang.Float>;
+    var heartRateSamples as Lang.Array<Lang.Number>;
+    var distanceCheckpoints as Lang.Array<Lang.Float>;
     var lastGpsPosition;
     
     // Session goals and achievements
@@ -52,20 +52,21 @@ class SessionStats {
     function initialize() {
         System.println("SessionStats: Initializing session statistics");
         
-        // Initialize history arrays
-        tricksHistory = [];
-        grindsHistory = [];
-        jumpsHistory = [];
+        // Initialize history arrays - EXPLICIT TYPES
+        tricksHistory = new Lang.Array[MAX_TRICK_HISTORY];
+        grindsHistory = new Lang.Array[MAX_TRICK_HISTORY];
+        jumpsHistory = new Lang.Array[MAX_TRICK_HISTORY];
+
         for (var i = 0; i < MAX_TRICK_HISTORY; i++) {
             tricksHistory.add(null);
             grindsHistory.add(null);
             jumpsHistory.add(null);
         }
         
-        // Initialize sample arrays
-        speedSamples = [];
-        heartRateSamples = [];
-        distanceCheckpoints = [];
+        // Initialize sample arrays - TYPED ARRAYS
+        speedSamples = new Lang.Array<Lang.Float>[MAX_SAMPLES];
+        heartRateSamples = new Lang.Array<Lang.Number>[MAX_SAMPLES];
+        distanceCheckpoints = new Lang.Array<Lang.Float>[MAX_SAMPLES];
         for (var i = 0; i < MAX_SAMPLES; i++) {
             speedSamples.add(0.0);
             heartRateSamples.add(0);
@@ -317,22 +318,64 @@ class SessionStats {
     }
 
     // Add value to circular sample array
-    function addToSampleArray(array, value) {
+    /* function addToSampleArray(array, value) {
         for (var i = 0; i < MAX_SAMPLES - 1; i++) {
             array[i] = array[i + 1];
         }
         array[MAX_SAMPLES - 1] = value;
-    }
+    } */
+    function addToSampleArray(array as Lang.Array, value) as Void {
+        // SAFE ACCESS: Check array exists and has proper size
+        if (array == null || array.size() < MAX_SAMPLES) {
+            System.println("SessionStats: addToSampleArray - invalid array size");
+            return;
+        }
+        
+        // Shift values left - SAFE VERSION
+        for (var i = 0; i < MAX_SAMPLES - 1; i++) {
+            if (i + 1 < array.size() && i < array.size()) {
+                array[i] = array[i + 1];
+            }
+        }
+        
+        // Add new value at end - SAFE ACCESS
+        if (MAX_SAMPLES - 1 < array.size()) {
+            array[MAX_SAMPLES - 1] = value;
+        }
+    }    
 
-    // Calculate average of sample array
-    function calculateArrayAverage(array) {
+    function calculateArrayAverage(array as Lang.Array) as Lang.Float {
+        // SAFE ACCESS: Check array exists
+        if (array == null || array.size() == 0) {
+            return 0.0;
+        }
+        
         var sum = 0.0;
         var count = 0;
+        var arraySize = array.size();
+        var maxIndex = arraySize < MAX_SAMPLES ? arraySize : MAX_SAMPLES;
         
-        for (var i = 0; i < MAX_SAMPLES; i++) {
-            if (array[i] != null && array[i] > 0) {
-                sum += array[i];
-                count++;
+        // Safe iteration with bounds checking
+        for (var i = 0; i < maxIndex; i++) {
+            if (i < arraySize) {
+                var value = array[i];
+                if (value != null && value > 0) {
+                    // Handle different numeric types safely
+                    if (value instanceof Lang.Float) {
+                        sum += value as Lang.Float;
+                    } else if (value instanceof Lang.Number) {
+                        sum += (value as Lang.Number).toFloat();
+                    } else {
+                        // Try to convert to float
+                        try {
+                            sum += value.toFloat();
+                        } catch (exception) {
+                            // Skip invalid values
+                            continue;
+                        }
+                    }
+                    count++;
+                }
             }
         }
         
@@ -340,25 +383,75 @@ class SessionStats {
     }
 
     // Add item to history array
-    function addToHistory(historyArray, item) {
-        for (var i = 0; i < MAX_TRICK_HISTORY - 1; i++) {
-            historyArray[i] = historyArray[i + 1];
+    function addToHistory(historyArray as Lang.Array, item) as Void {
+        // SAFE ACCESS: Check array exists and has proper size
+        if (historyArray == null || historyArray.size() < MAX_TRICK_HISTORY) {
+            System.println("SessionStats: addToHistory - invalid array size");
+            return;
         }
-        historyArray[MAX_TRICK_HISTORY - 1] = item;
+        
+        // Shift values left - SAFE VERSION
+        for (var i = 0; i < MAX_TRICK_HISTORY - 1; i++) {
+            if (i + 1 < historyArray.size() && i < historyArray.size()) {
+                historyArray[i] = historyArray[i + 1];
+            }
+        }
+        
+        // Add new item at end - SAFE ACCESS
+        if (MAX_TRICK_HISTORY - 1 < historyArray.size()) {
+            historyArray[MAX_TRICK_HISTORY - 1] = item;
+        }
     }
 
     // Clear all history arrays
     function clearHistoryArrays() as Void {
-        for (var i = 0; i < MAX_TRICK_HISTORY; i++) {
-            tricksHistory[i] = null;
-            grindsHistory[i] = null;
-            jumpsHistory[i] = null;
+        // SAFE CLEAR: Check arrays exist and have proper size
+        if (tricksHistory != null && tricksHistory.size() >= MAX_TRICK_HISTORY) {
+            for (var i = 0; i < MAX_TRICK_HISTORY; i++) {
+                if (i < tricksHistory.size()) {
+                    tricksHistory[i] = null;
+                }
+            }
         }
         
-        for (var i = 0; i < MAX_SAMPLES; i++) {
-            speedSamples[i] = 0.0;
-            heartRateSamples[i] = 0;
-            distanceCheckpoints[i] = 0.0;
+        if (grindsHistory != null && grindsHistory.size() >= MAX_TRICK_HISTORY) {
+            for (var i = 0; i < MAX_TRICK_HISTORY; i++) {
+                if (i < grindsHistory.size()) {
+                    grindsHistory[i] = null;
+                }
+            }
+        }
+        
+        if (jumpsHistory != null && jumpsHistory.size() >= MAX_TRICK_HISTORY) {
+            for (var i = 0; i < MAX_TRICK_HISTORY; i++) {
+                if (i < jumpsHistory.size()) {
+                    jumpsHistory[i] = null;
+                }
+            }
+        }
+        
+        if (speedSamples != null && speedSamples.size() >= MAX_SAMPLES) {
+            for (var i = 0; i < MAX_SAMPLES; i++) {
+                if (i < speedSamples.size()) {
+                    speedSamples[i] = 0.0;
+                }
+            }
+        }
+        
+        if (heartRateSamples != null && heartRateSamples.size() >= MAX_SAMPLES) {
+            for (var i = 0; i < MAX_SAMPLES; i++) {
+                if (i < heartRateSamples.size()) {
+                    heartRateSamples[i] = 0;
+                }
+            }
+        }
+        
+        if (distanceCheckpoints != null && distanceCheckpoints.size() >= MAX_SAMPLES) {
+            for (var i = 0; i < MAX_SAMPLES; i++) {
+                if (i < distanceCheckpoints.size()) {
+                    distanceCheckpoints[i] = 0.0;
+                }
+            }
         }
     }
 

@@ -22,8 +22,11 @@ function clamp(value, minVal, maxVal) {
     return value;
 }
 
-function abs(value) {
+/* function abs(value) {
     return value < 0 ? -value : value;
+} */
+function abs(value as Lang.Float) as Lang.Float {
+    return value >= 0 ? value : -value;
 }
 
 // Konwersja jednostek
@@ -106,14 +109,61 @@ class DeviceLogger {
         return logEntries;
     }
     
-    function getLogsAsString() {
+    /* function getLogsAsString() {
         var result = "=== DEVICE LOGS ===\n";
         for (var i = 0; i < logEntries.size(); i++) {
             result += logEntries[i] + "\n";
         }
         result += "=== END LOGS ===";
         return result;
-    }
+    } */
+    // Utils.mc - POPRAWKA dla "Cannot determine if container access" 
+
+    /* function getLogsAsString() {
+        var result = "=== DEVICE LOGS ===\n";
+        
+        // POPRAWKA: Sprawdź czy logEntries nie jest null i czy ma size()
+        if (logEntries != null && logEntries has :size) {
+            var logSize = logEntries.size();
+            
+            for (var i = 0; i < logSize; i++) {
+                // POPRAWKA: Bezpieczny dostęp do elementu array
+                if (i < logEntries.size()) {
+                    var logEntry = logEntries[i];
+                    if (logEntry != null) {
+                        result += logEntry.toString() + "\n";
+                    } else {
+                        result += "[NULL LOG ENTRY]\n";
+                    }
+                }
+            }
+        } else {
+            result += "[NO LOG ENTRIES AVAILABLE]\n";
+        }
+        
+        result += "=== END LOGS ===";
+        return result;
+    } */
+
+    function getLogsAsString() {
+        var result = "=== DEVICE LOGS ===\n";
+        
+        // Cast logEntries do Array type
+        if (logEntries != null) {
+            var logs = logEntries as Lang.Array;
+            var logSize = logs.size();
+            
+            for (var i = 0; i < logSize; i++) {
+                var entry = logs[i];
+                result += (entry != null ? entry.toString() : "[NULL]") + "\n";
+            }
+        } else {
+            result += "[NO LOGS]\n";
+        }
+        
+        result += "=== END LOGS ===";
+        return result;
+    }    
     
     function clearLogs() {
         logEntries = [];

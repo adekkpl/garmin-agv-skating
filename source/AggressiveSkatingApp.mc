@@ -5,12 +5,14 @@ using Toybox.Lang;
 using Toybox.Application;
 using Toybox.System;
 using Toybox.WatchUi;
+using Toybox.ActivityRecording;
 
 class InlineSkatingApp extends Application.AppBase {
     
     var sensorManager;
     var trickDetector;
     var sessionStats;
+    var activityRecorder;
     var isSessionActive = false;
     var mainView;
     var mainDelegate;
@@ -20,6 +22,8 @@ class InlineSkatingApp extends Application.AppBase {
         System.println("InlineSkatingApp: Application initializing...");
         System.println("=== APP START ===");
         System.println("Creating log file marker");
+
+        activityRecorder = new ActivityRecorder();
     }
 
     // Called when application starts
@@ -71,6 +75,45 @@ class InlineSkatingApp extends Application.AppBase {
                     } catch (exception) {
                         logError("Saving session data", exception);
                         System.println("InlineSkatingApp: Error saving session data: " + exception.getErrorMessage());
+                    }
+                }
+            }
+            
+            // POPRAWKA: Zamiast activityRecorder.onAppExit() użyj:
+            if (activityRecorder != null) {
+                try {
+                    // Sprawdź czy session jest aktywna i zatrzymaj ją
+                    if (activityRecorder.isSessionRecording()) {
+                        logDevice("Stopping active recording session before app exit");
+                        System.println("InlineSkatingApp: Stopping active recording session before app exit");
+                        
+                        var stopSuccess = activityRecorder.stopRecording();
+                        if (stopSuccess) {
+                            // Zapisz session
+                            var saveSuccess = activityRecorder.saveSession();
+                            if (saveSuccess) {
+                                logDevice("Activity session auto-saved on app exit");
+                                System.println("InlineSkatingApp: Activity session auto-saved on app exit");
+                            } else {
+                                // Jeśli zapis się nie udał, odrzuć żeby zwolnić pamięć
+                                activityRecorder.discardSession();
+                                logDevice("Activity session discarded due to save failure");
+                            }
+                        } else {
+                            logDevice("Failed to stop recording session on app exit");
+                        }
+                    } else {
+                        logDevice("No active recording session to stop");
+                    }
+                } catch (exception) {
+                    logError("ActivityRecorder cleanup on app exit", exception);
+                    System.println("InlineSkatingApp: Error during ActivityRecorder cleanup: " + exception.getErrorMessage());
+                    
+                    // W przypadku błędu, spróbuj przynajmniej odrzucić session
+                    try {
+                        activityRecorder.discardSession();
+                    } catch (discardException) {
+                        logError("Failed to discard session", discardException);
                     }
                 }
             }
@@ -144,6 +187,15 @@ class InlineSkatingApp extends Application.AppBase {
             logDevice("SensorManager created successfully");
             System.println("InlineSkatingApp: SensorManager initialized");
             
+           // ActivityRecorder initialization
+            logDevice("Creating ActivityRecorder");
+            activityRecorder = new ActivityRecorder();
+            if (activityRecorder == null) {
+                logCritical("Failed to create ActivityRecorder - NULL returned");
+                System.println("InlineSkatingApp: Failed to create ActivityRecorder");
+                return false;
+            }
+
             // Initialize trick detection engine
             logDevice("Creating TrickDetector");
             trickDetector = new TrickDetector();
@@ -213,11 +265,20 @@ class InlineSkatingApp extends Application.AppBase {
         try {
             System.println("InlineSkatingApp: Starting new session");
             
-            // Ensure components are initialized
+            // Ensure components are initialized - testing purpose
             if (!ensureComponentsReady()) {
                 logCritical("Cannot start session - components not ready");
                 System.println("InlineSkatingApp: Cannot start session - components not ready");
                 return;
+            }
+
+            // Start FIT recording FIRST
+            var recordingStarted = activityRecorder.startRecording();
+            if (recordingStarted) {
+                System.println("InlineSkatingApp: FIT recording started");
+            } else {
+                System.println("InlineSkatingApp: Warning - FIT recording failed to start");
+                // Continue anyway - app can work without recording
             }
             
             // Reset and start statistics
@@ -237,7 +298,7 @@ class InlineSkatingApp extends Application.AppBase {
             isSessionActive = true;
             
             // Start activity recording
-            startActivitySession();
+            //startActivitySession();
             
             logDevice("Session started successfully");
             System.println("InlineSkatingApp: Session started successfully");
@@ -263,7 +324,7 @@ class InlineSkatingApp extends Application.AppBase {
             System.println("InlineSkatingApp: Stopping session");
             
             // Stop sensor monitoring
-            if (sensorManager != null) {
+            /*if (sensorManager != null) {
                 sensorManager.stopSensors();
                 logDevice("Sensors stopped");
             }
@@ -278,16 +339,26 @@ class InlineSkatingApp extends Application.AppBase {
             if (sessionStats != null) {
                 sessionStats.endSession();
                 logDevice("Session stats ended");
-            }
+            }*/
+
+            // Stop components first
+            sensorManager.stopSensors();
+            trickDetector.stopDetection();
+            sessionStats.endSession();
             
-            // Stop activity recording
-            stopActivitySession();
+            // Save and stop FIT recording
+            //var recordingSaved = activityRecorder.stopAndSave();
+            var stopSuccess = activityRecorder.stopRecording();
+            var saveSuccess = activityRecorder.saveSession();
+
+            /* if (recordingSaved) {
+                System.println("InlineSkatingApp: FIT file saved to device");
+            } else {
+                System.println("InlineSkatingApp: Warning - FIT recording save failed");
+            }    */         
             
             // Mark session as inactive
             isSessionActive = false;
-            
-            // Save session data
-            saveSessionData();
             
             logDevice("Session stopped successfully");
             System.println("InlineSkatingApp: Session stopped successfully");
@@ -332,7 +403,7 @@ class InlineSkatingApp extends Application.AppBase {
 
     // Ensure all components are ready
     function ensureComponentsReady() {
-        if (sensorManager == null || trickDetector == null || sessionStats == null) {
+        if (sensorManager == null || trickDetector == null || sessionStats == null || activityRecorder == null) {
             logDevice("Components not ready, reinitializing");
             System.println("InlineSkatingApp: Components not ready, reinitializing...");
             return initializeComponents();
@@ -340,23 +411,37 @@ class InlineSkatingApp extends Application.AppBase {
         return true;
     }
 
-    // Start Garmin activity session
-    function startActivitySession() as Void {
-        logDevice("Starting activity recording");
-        System.println("InlineSkatingApp: Starting activity recording");
-        
-        // TODO: Implement activity session if needed
-        // var session = ActivityRecording.createSession({:name=>"Aggressive Skating", :sport=>ActivityRecording.SPORT_CYCLING});
-        // session.start();
-    }
 
     // Stop Garmin activity session
     function stopActivitySession() as Void {
         logDevice("Stopping activity recording");
         System.println("InlineSkatingApp: Stopping activity recording");
         
-        // TODO: Implement activity session stop
+        if (activityRecorder != null) {
+            // Stop recording first
+            var stopSuccess = activityRecorder.stopRecording();
+            if (stopSuccess) {
+                logDevice("Activity recording stopped successfully");
+                
+                // Save the session
+                var saveSuccess = activityRecorder.saveSession();
+                if (saveSuccess) {
+                    logDevice("Activity session saved successfully");
+                    System.println("InlineSkatingApp: Activity session saved successfully");
+                } else {
+                    logDevice("Failed to save activity session");
+                    System.println("InlineSkatingApp: Failed to save activity session");
+                    
+                    // If save fails, discard the session to free memory
+                    activityRecorder.discardSession();
+                }
+            } else {
+                logDevice("Failed to stop activity recording");
+                System.println("InlineSkatingApp: Failed to stop activity recording");
+            }
+        }
     }
+    /* 
 
     // Save session data to persistent storage
     function saveSessionData() as Void {
@@ -375,7 +460,7 @@ class InlineSkatingApp extends Application.AppBase {
                 System.println("InlineSkatingApp: Error getting session data: " + exception.getErrorMessage());
             }
         }
-    }
+    } */
 
     // Get current session status
     function getSessionStatus() {
@@ -467,4 +552,7 @@ class SimpleErrorView extends WatchUi.View {
             logError("SimpleErrorView onUpdate", exception);
         }
     }
+
+ 
+    
 }

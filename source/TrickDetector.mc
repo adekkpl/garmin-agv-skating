@@ -43,14 +43,19 @@ class TrickDetector {
     var baselineHeight;
     
     // Analysis buffers
-   var accelAnalysisBuffer = null;
+   /* var accelAnalysisBuffer = null;
    var altitudeAnalysisBuffer = null;
-   var heightChangeBuffer = null;
+   var heightChangeBuffer = null; */
+    //explicit type declarations:
+    var accelAnalysisBuffer as Lang.Array<Lang.Float>;
+    var altitudeAnalysisBuffer as Lang.Array<Lang.Float>;
+    var heightChangeBuffer as Lang.Array<Lang.Float>;   
     
     // Calibration and filtering
     var noiseFilter;
     var calibrationComplete = false;
-    var baselineAccel = {"x" => 0.0, "y" => 0.0, "z" => 9.8}; // Standard gravity
+    //var baselineAccel = {"x" => 0.0, "y" => 0.0, "z" => 9.8}; // Standard gravity
+    var baselineAccel as Lang.Dictionary or Null;
     
     // Detection sensitivity (adjustable)
     var sensitivityMultiplier = 1.0;
@@ -63,6 +68,8 @@ class TrickDetector {
     
     // Callbacks
     var trickDetectedCallback;
+
+
     
     function initialize() {
         System.println("TrickDetector: Initializing trick detection engine");
@@ -72,27 +79,24 @@ class TrickDetector {
         previousState = STATE_RIDING;
         
         // Initialize analysis buffers // Na bardziej explicite:
-         accelAnalysisBuffer = new [20];
-         altitudeAnalysisBuffer = new [20];
-         heightChangeBuffer = new [10];
-
-        //accelAnalysisBuffer = [];
+        accelAnalysisBuffer = new Lang.Array<Lang.Float>[20];
+        altitudeAnalysisBuffer = new Lang.Array<Lang.Float>[20];
+        heightChangeBuffer = new Lang.Array<Lang.Float>[10];
+       
+        // Initialize buffers with zeros - SAFE ACCESS
         for (var i = 0; i < 20; i++) {
-            accelAnalysisBuffer.add(0.0);
-        }
-        //altitudeAnalysisBuffer = [];
-        for (var i = 0; i < 20; i++) {
-            altitudeAnalysisBuffer.add(0.0);
-        }
-        //heightChangeBuffer = [];
-        for (var i = 0; i < 10; i++) {
-            heightChangeBuffer.add(0.0);
+            if (i < accelAnalysisBuffer.size()) {
+                accelAnalysisBuffer[i] = 0.0;
+            }
+            if (i < altitudeAnalysisBuffer.size()) {
+                altitudeAnalysisBuffer[i] = 0.0;
+            }
         }
         
-        // Initialize buffers with zeros
-        for (var i = 0; i < 20; i++) {
-            accelAnalysisBuffer[i] = 0.0;
-            altitudeAnalysisBuffer[i] = 0.0;
+        for (var i = 0; i < 10; i++) {
+            if (i < heightChangeBuffer.size()) {
+                heightChangeBuffer[i] = 0.0;
+            }
         }
         
         noiseFilter = new NoiseFilter();
@@ -101,6 +105,13 @@ class TrickDetector {
             heightChangeBuffer[i] = 0.0;
         }
         
+        // Initialize baseline acceleration dictionary
+        baselineAccel = {
+            "x" => 0.0 as Lang.Float,
+            "y" => 0.0 as Lang.Float,
+            "z" => 0.0 as Lang.Float
+        } as Lang.Dictionary;
+
         // Initialize baseline values
         baselineHeight = 0.0;
         
@@ -159,52 +170,88 @@ class TrickDetector {
 
     // Update circular analysis buffers
     function updateAnalysisBuffers(accelData, barometerData) {
-        // Shift acceleration buffer
-        for (var i = 0; i < 19; i++) {
-            accelAnalysisBuffer[i] = accelAnalysisBuffer[i + 1];
+        // SAFE ACCESS: Check buffer sizes first
+        if (accelAnalysisBuffer == null || accelAnalysisBuffer.size() < 20 ||
+            altitudeAnalysisBuffer == null || altitudeAnalysisBuffer.size() < 20) {
+            System.println("TrickDetector: Buffers not properly initialized");
+            return;
         }
         
-        // Calculate total acceleration magnitude
+        // Shift acceleration buffer - SAFE VERSION
+        for (var i = 0; i < 19; i++) {
+            if (i + 1 < accelAnalysisBuffer.size() && i < accelAnalysisBuffer.size()) {
+                accelAnalysisBuffer[i] = accelAnalysisBuffer[i + 1];
+            }
+        }
+        
+        // Calculate total acceleration magnitude - SAFE ACCESS
+        var accelX = accelData.get("x") as Lang.Float;
+        var accelY = accelData.get("y") as Lang.Float;
+        var accelZ = accelData.get("z") as Lang.Float;
+        
         var accelMagnitude = Math.sqrt(
-            Math.pow(accelData.get("x"), 2) + 
-            Math.pow(accelData.get("y"), 2) + 
-            Math.pow(accelData.get("z"), 2)
+            Math.pow(accelX, 2) + 
+            Math.pow(accelY, 2) + 
+            Math.pow(accelZ, 2)
         );
-        accelAnalysisBuffer[19] = accelMagnitude;
         
-        // Shift altitude buffer
-        for (var i = 0; i < 19; i++) {
-            altitudeAnalysisBuffer[i] = altitudeAnalysisBuffer[i + 1];
+        if (19 < accelAnalysisBuffer.size()) {
+            accelAnalysisBuffer[19] = accelMagnitude;
         }
-        altitudeAnalysisBuffer[19] = barometerData.get("altitude");
         
-        // Calculate height change for last few samples
-        if (altitudeAnalysisBuffer[15] != 0.0) {
+        // Shift altitude buffer - SAFE VERSION
+        for (var i = 0; i < 19; i++) {
+            if (i + 1 < altitudeAnalysisBuffer.size() && i < altitudeAnalysisBuffer.size()) {
+                altitudeAnalysisBuffer[i] = altitudeAnalysisBuffer[i + 1];
+            }
+        }
+        
+        var currentAltitude = barometerData.get("altitude") as Lang.Float;
+        if (19 < altitudeAnalysisBuffer.size()) {
+            altitudeAnalysisBuffer[19] = currentAltitude;
+        }
+        
+        // Calculate height change for last few samples - SAFE ACCESS
+        if (heightChangeBuffer != null && heightChangeBuffer.size() >= 10 &&
+            15 < altitudeAnalysisBuffer.size() && 19 < altitudeAnalysisBuffer.size() &&
+            altitudeAnalysisBuffer[15] != 0.0) {
+            
             var heightChange = altitudeAnalysisBuffer[19] - altitudeAnalysisBuffer[15];
             
-            // Shift height change buffer
+            // Shift height change buffer - SAFE VERSION
             for (var i = 0; i < 9; i++) {
-                heightChangeBuffer[i] = heightChangeBuffer[i + 1];
+                if (i + 1 < heightChangeBuffer.size() && i < heightChangeBuffer.size()) {
+                    heightChangeBuffer[i] = heightChangeBuffer[i + 1];
+                }
             }
-            heightChangeBuffer[9] = heightChange;
+            
+            if (9 < heightChangeBuffer.size()) {
+                heightChangeBuffer[9] = heightChange;
+            }
         }
     }
 
     // Auto-calibration for baseline values
     function performCalibration(accelData, barometerData) {
-        // Simple calibration - establish baseline when relatively stable
-        //var currentAccelMag = accelAnalysisBuffer[19];
-        var currentAccelMag = accelAnalysisBuffer[19];
-        //var currentAccelMag = (accelAnalysisBuffer as Array)[19];
+        if (accelAnalysisBuffer == null || accelAnalysisBuffer.size() < 20) {
+            return;
+        }
+        
+        var currentAccelMag = accelAnalysisBuffer[19] as Lang.Float;
         
         if (abs(currentAccelMag - 9.8) < 1.0) { // Close to 1g, probably stable
-            baselineAccel["x"] = accelData.get("x");
-            baselineAccel["y"] = accelData.get("y");
-            baselineAccel["z"] = accelData.get("z");
-            baselineHeight = barometerData.get("altitude");
-            calibrationComplete = true;
-            
-            System.println("TrickDetector: Calibration complete - Baseline height: " + baselineHeight);
+            // SAFE ACCESS to accelData and barometerData
+            if (baselineAccel != null && accelData != null && barometerData != null) {
+                // SAFE DICTIONARY UPDATE using .put() method
+                baselineAccel.put("x", accelData.get("x") as Lang.Float);
+                baselineAccel.put("y", accelData.get("y") as Lang.Float);
+                baselineAccel.put("z", accelData.get("z") as Lang.Float);
+                
+                baselineHeight = barometerData.get("altitude") as Lang.Float;
+                calibrationComplete = true;
+                
+                System.println("TrickDetector: Calibration complete - Baseline height: " + baselineHeight);
+            }
         }
     }
 
@@ -237,8 +284,13 @@ class TrickDetector {
 
     // Check for takeoff (jump start)
     function checkForTakeoff(accelData, barometerData, timestamp) {
-        var currentAccelMag = accelAnalysisBuffer[19];
-        var heightChange = heightChangeBuffer[9];
+        if (accelAnalysisBuffer == null || accelAnalysisBuffer.size() < 20 ||
+            heightChangeBuffer == null || heightChangeBuffer.size() < 10) {
+            return;
+        }
+        
+        var currentAccelMag = accelAnalysisBuffer[19] as Lang.Float;
+        var heightChange = heightChangeBuffer[9] as Lang.Float;
         
         // Detect sudden upward acceleration + height gain
         if (currentAccelMag > (9.8 + TAKEOFF_ACCEL_THRESHOLD * sensitivityMultiplier) && 
@@ -247,7 +299,7 @@ class TrickDetector {
             // Transition to takeoff state
             currentState = STATE_TAKEOFF;
             takeoffStartTime = timestamp;
-            takeoffStartHeight = barometerData.get("altitude");
+            takeoffStartHeight = barometerData.get("altitude") as Lang.Float;
             
             System.println("TrickDetector: Takeoff detected - Accel: " + currentAccelMag + "g, Height change: " + heightChange + "m");
         }
@@ -332,7 +384,11 @@ class TrickDetector {
 
     // Check for return to riding state
     function checkForRiding(accelData, barometerData, timestamp) {
-        var currentAccelMag = accelAnalysisBuffer[19];
+        if (accelAnalysisBuffer == null || accelAnalysisBuffer.size() < 20) {
+            return;
+        }
+        
+        var currentAccelMag = accelAnalysisBuffer[19] as Lang.Float;
         var heightStability = calculateHeightStability();
         
         // Return to riding when acceleration normalizes and height is stable
@@ -342,23 +398,31 @@ class TrickDetector {
         }
         
         // Force return after timeout
-        if (timestamp - (grindStartTime != null ? grindStartTime : takeoffStartTime) > 3000) {
+        var timeoutBase = grindStartTime != null ? grindStartTime : takeoffStartTime;
+        if (timeoutBase != null && timestamp - timeoutBase > 3000) {
             currentState = STATE_RIDING;
         }
     }
 
     // Calculate height stability (standard deviation of recent altitude readings)
     function calculateHeightStability() {
+        if (altitudeAnalysisBuffer == null || altitudeAnalysisBuffer.size() < 20) {
+            return 999.0; // High instability if no data
+        }
+        
         var sum = 0.0;
         var mean = 0.0;
         var variance = 0.0;
         var count = 0;
         
-        // Calculate mean of last 10 altitude readings
+        // Calculate mean of last 10 altitude readings - SAFE ACCESS
         for (var i = 10; i < 20; i++) {
-            if (altitudeAnalysisBuffer[i] != 0.0) {
-                sum += altitudeAnalysisBuffer[i];
-                count++;
+            if (i < altitudeAnalysisBuffer.size()) {
+                var altValue = altitudeAnalysisBuffer[i] as Lang.Float;
+                if (altValue != 0.0) {
+                    sum += altValue;
+                    count++;
+                }
             }
         }
         
@@ -368,10 +432,13 @@ class TrickDetector {
         
         mean = sum / count;
         
-        // Calculate variance
+        // Calculate variance - SAFE ACCESS
         for (var i = 10; i < 20; i++) {
-            if (altitudeAnalysisBuffer[i] != 0.0) {
-                variance += Math.pow(altitudeAnalysisBuffer[i] - mean, 2);
+            if (i < altitudeAnalysisBuffer.size()) {
+                var altValue = altitudeAnalysisBuffer[i] as Lang.Float;
+                if (altValue != 0.0) {
+                    variance += Math.pow(altValue - mean, 2);
+                }
             }
         }
         
@@ -393,9 +460,14 @@ class TrickDetector {
 
     // Detect landing impact
     function detectLandingImpact(accelData) {
-        var currentAccelMag = accelAnalysisBuffer[19];
+        if (accelAnalysisBuffer == null || accelAnalysisBuffer.size() < 20) {
+            return false;
+        }
+        
+        var currentAccelMag = accelAnalysisBuffer[19] as Lang.Float;
         return currentAccelMag > (9.8 + LANDING_ACCEL_THRESHOLD);
     }
+
 
     // Finalize and record detected trick
     function finalizeTrick(trickType, timestamp, duration) {
@@ -452,7 +524,9 @@ class TrickDetector {
 
     // Get current state as string for debugging
     function getCurrentStateString() {
-        switch (currentState) {
+        var state = currentState as Lang.Number;  // DODAJ TO!
+        
+        switch (state) {
             case STATE_RIDING:
                 return "RIDING";
             case STATE_TAKEOFF:
@@ -464,36 +538,43 @@ class TrickDetector {
             case STATE_LANDING:
                 return "LANDING";
             default:
-                return "UNKNOWN";
+                return "UNKNOWN(" + state.toString() + ")";
         }
     }
 
    // Simple noise filter helper class
-   class NoiseFilter {
-      var filterBuffer;
-      const FILTER_SIZE = 5;
-      
-      function initialize() {
-         filterBuffer = new [FILTER_SIZE];
-         for (var i = 0; i < FILTER_SIZE; i++) {
-               filterBuffer[i] = 0.0;
-         }
-      }
-      
-      function filter(value){
-         // Simple moving average filter
-         for (var i = 0; i < FILTER_SIZE - 1; i++) {
-               filterBuffer[i] = filterBuffer[i + 1];
-         }
-         filterBuffer[FILTER_SIZE - 1] = value;
-         
-         var sum = 0.0;
-         for (var i = 0; i < FILTER_SIZE; i++) {
-               sum += filterBuffer[i];
-         }
-         
-         return sum / FILTER_SIZE;
-      }
-   }
+    class NoiseFilter {
+        var filterBuffer as Lang.Array<Lang.Float>;  // EXPLICIT TYPE!
+        const FILTER_SIZE = 5;
+        
+        function initialize() {
+            // POPRAWKA: Explicit Array creation
+            filterBuffer = new Lang.Array<Lang.Float>[FILTER_SIZE];
+            
+            for (var i = 0; i < FILTER_SIZE; i++) {
+                filterBuffer[i] = 0.0;
+            }
+        }
+        
+        function filter(value as Lang.Float) as Lang.Float {
+            // POPRAWKA: Safe access with size check
+            if (filterBuffer == null || filterBuffer.size() < FILTER_SIZE) {
+                return value;
+            }
+            
+            // Simple moving average filter
+            for (var i = 0; i < FILTER_SIZE - 1; i++) {
+                filterBuffer[i] = filterBuffer[i + 1];
+            }
+            filterBuffer[FILTER_SIZE - 1] = value;
+            
+            var sum = 0.0;
+            for (var i = 0; i < FILTER_SIZE; i++) {
+                sum += filterBuffer[i];
+            }
+            
+            return sum / FILTER_SIZE;
+        }
+    }
 
 }

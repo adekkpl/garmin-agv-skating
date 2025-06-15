@@ -227,77 +227,7 @@ class InlineSkatingView extends WatchUi.View {
         dc.drawText(centerX, centerY, Graphics.FONT_TINY, errorMsg, Graphics.TEXT_JUSTIFY_CENTER);
     }
 
-    // Draw main screen with key metrics - BETTER LAYOUT VERSION
-    /* function drawMainScreen(dc as Graphics.Dc) as Void {
-        System.println("InlineSkatingView: Drawing main screen - START");
-        
-        // Use WHITE background like working version
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_WHITE);
-        dc.clear();
-        
-        // Draw app title at top
-        dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, 10, Graphics.FONT_SMALL, "AGV", Graphics.TEXT_JUSTIFY_CENTER);
-        
-        // Get session data
-        var sessionStats = app != null ? app.getSessionStats() : null;
-        var displayData = sessionStats != null ? sessionStats.getDisplayData() : null;
-        
-        if (displayData == null) {
-            // No data - show simple message
-            dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(centerX, centerY - 20, Graphics.FONT_MEDIUM, "NO DATA", Graphics.TEXT_JUSTIFY_CENTER);
-            dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(centerX, centerY + 10, Graphics.FONT_SMALL, "Press START to begin", Graphics.TEXT_JUSTIFY_CENTER);
-            return;
-        }
-        
-        // Draw session status - FIXED positioning
-        var isActive = sessionStats != null ? sessionStats.isActive() : false;
-        dc.setColor(isActive ? Graphics.COLOR_GREEN : Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
-        dc.fillCircle(25, 45, 6);  // Mniejsze kółko, dalej od środka
-        dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(90, 55, Graphics.FONT_TINY, isActive ? "ACTIVE" : "STOPPED", Graphics.TEXT_JUSTIFY_LEFT);
-        
-        // Main metrics - FIXED spacing to prevent overlap
-        var leftColumn = 20;     // Lewa kolumna - etykiety
-        var rightColumn = screenWidth - 20;  // Prawa kolumna - wartości
-        var startY = 90;         // Początek danych
-        var lineHeight = 35;     // Zwiększony odstęp między liniami
-        var currentY = startY;
-        
-        // Tricks
-        dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(leftColumn+30, currentY, Graphics.FONT_SMALL, "Tricks:", Graphics.TEXT_JUSTIFY_LEFT);
-        dc.drawText(rightColumn-25, currentY, Graphics.FONT_SMALL, displayData.get("tricks").toString(), Graphics.TEXT_JUSTIFY_RIGHT);
-        currentY += lineHeight;
-        
-        // Session time
-        dc.setColor(Graphics.COLOR_PURPLE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(leftColumn+15, currentY, Graphics.FONT_SMALL, "Time:", Graphics.TEXT_JUSTIFY_LEFT);
-        dc.drawText(rightColumn, currentY, Graphics.FONT_SMALL, displayData.get("sessionTime"), Graphics.TEXT_JUSTIFY_RIGHT);
-        currentY += lineHeight;
-        
-        // Grinds
-        dc.setColor(Graphics.COLOR_ORANGE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(leftColumn, currentY, Graphics.FONT_SMALL, "Grinds:", Graphics.TEXT_JUSTIFY_LEFT);
-        dc.drawText(rightColumn, currentY, Graphics.FONT_SMALL, displayData.get("grinds").toString(), Graphics.TEXT_JUSTIFY_RIGHT);
-        currentY += lineHeight;
-        
-        // Speed
-        dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(leftColumn-5, currentY, Graphics.FONT_SMALL, "Speed:", Graphics.TEXT_JUSTIFY_LEFT);
-        dc.drawText(rightColumn, currentY, Graphics.FONT_SMALL, displayData.get("speed"), Graphics.TEXT_JUSTIFY_RIGHT);
-        currentY += lineHeight;
-        
-        // Distance at bottom - separate section
-        dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, screenHeight - 60, Graphics.FONT_MEDIUM, displayData.get("distance"), Graphics.TEXT_JUSTIFY_CENTER);
-        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, screenHeight - 95, Graphics.FONT_TINY, "DISTANCE", Graphics.TEXT_JUSTIFY_CENTER);
-        
-        System.println("InlineSkatingView: Main screen drawing COMPLETED");
-    } */
+
     // Draw main screen with key metrics - BLACK THEME VERSION
     function drawMainScreen(dc as Graphics.Dc) as Void {
         System.println("InlineSkatingView: Drawing main screen - START");
@@ -313,6 +243,11 @@ class InlineSkatingView extends WatchUi.View {
         // Get session data
         var sessionStats = app != null ? app.getSessionStats() : null;
         var displayData = sessionStats != null ? sessionStats.getDisplayData() : null;
+        
+        
+        // Get sensor data from SensorManager
+        var sensorManager = app != null ? app.getSensorManager() : null;
+        var sensorData = sensorManager != null ? sensorManager.getCurrentSensorData() : null;
         
         if (displayData == null) {
             // No data - show simple message
@@ -355,36 +290,61 @@ class InlineSkatingView extends WatchUi.View {
         dc.drawText(rightColumn, currentY, Graphics.FONT_SMALL, displayData.get("grinds").toString(), Graphics.TEXT_JUSTIFY_RIGHT);
         currentY += lineHeight;
         
-        // Speed
+        // Speed - now uses GPS data from SensorManager
         dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_TRANSPARENT);
         dc.drawText(leftColumn-5, currentY, Graphics.FONT_SMALL, "Speed:", Graphics.TEXT_JUSTIFY_LEFT);
-        dc.drawText(rightColumn, currentY, Graphics.FONT_SMALL, displayData.get("speed"), Graphics.TEXT_JUSTIFY_RIGHT);
+        
+        // Get speed from GPS data if available
+        var speedText = "0.0 km/h";
+        if (sensorData != null) {
+            var gpsData = sensorData.get("gps");
+            if (gpsData != null && gpsData.get("speed") != null) {
+                var speedKmh = gpsData.get("speed") * 3.6; // Convert m/s to km/h
+                speedText = speedKmh.format("%.1f") + " km/h";
+            }
+        }
+        dc.drawText(rightColumn, currentY, Graphics.FONT_SMALL, speedText, Graphics.TEXT_JUSTIFY_RIGHT);
         currentY += lineHeight;
         
-        // Distance at bottom - separate section
-        dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, screenHeight - 60, Graphics.FONT_MEDIUM, displayData.get("distance"), Graphics.TEXT_JUSTIFY_CENTER);
-        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, screenHeight - 95, Graphics.FONT_TINY, "DISTANCE", Graphics.TEXT_JUSTIFY_CENTER);
-        
-        // DODAJ HEART RATE TUTAJ
-        var heartRate = displayData.get("heartRate");
-        if (heartRate != null && heartRate > 0) {
-            dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(leftColumn, currentY, Graphics.FONT_SMALL, "HR:", Graphics.TEXT_JUSTIFY_LEFT);
-            dc.drawText(rightColumn, currentY, Graphics.FONT_SMALL, heartRate.toString() + " bpm", Graphics.TEXT_JUSTIFY_RIGHT);
+        // HEART RATE - używa nowe dane z SensorManager (w tym samym miejscu co miałeś)
+        if (sensorData != null) {
+            var hrData = sensorData.get("heartRate");
+            if (hrData != null && hrData.get("heartRate") != null && hrData.get("heartRate") > 0) {
+                dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
+                dc.drawText(leftColumn, currentY, Graphics.FONT_SMALL, "HR:", Graphics.TEXT_JUSTIFY_LEFT);
+                dc.drawText(rightColumn, currentY, Graphics.FONT_SMALL, hrData.get("heartRate").toString() + " bpm", Graphics.TEXT_JUSTIFY_RIGHT);
+            } else {
+                // Pokaż brak danych HR
+                dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+                dc.drawText(leftColumn, currentY, Graphics.FONT_SMALL, "HR:", Graphics.TEXT_JUSTIFY_LEFT);
+                dc.drawText(rightColumn, currentY, Graphics.FONT_SMALL, "---", Graphics.TEXT_JUSTIFY_RIGHT);
+            }
             currentY += lineHeight;
         } else {
-            // Pokaż brak danych HR
+            // Fallback - jeśli nie ma sensorData, pokaż brak danych
             dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
             dc.drawText(leftColumn, currentY, Graphics.FONT_SMALL, "HR:", Graphics.TEXT_JUSTIFY_LEFT);
             dc.drawText(rightColumn, currentY, Graphics.FONT_SMALL, "---", Graphics.TEXT_JUSTIFY_RIGHT);
             currentY += lineHeight;
         }
 
-        // Distance at bottom - separate section
+        // Distance at bottom - używa session distance z GPS
+        var distanceText = "0m";
+        if (sensorData != null) {
+            var sessionDistance = sensorData.get("sessionDistance");
+            if (sessionDistance != null && sessionDistance > 0) {
+                if (sessionDistance < 1000) {
+                    distanceText = sessionDistance.format("%.0f") + "m";
+                } else {
+                    distanceText = (sessionDistance / 1000.0).format("%.2f") + "km";
+                }
+            }
+        }
+        
         dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, screenHeight - 60, Graphics.FONT_MEDIUM, displayData.get("distance"), Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(centerX, screenHeight - 60, Graphics.FONT_MEDIUM, distanceText, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(centerX, screenHeight - 95, Graphics.FONT_TINY, "DISTANCE", Graphics.TEXT_JUSTIFY_CENTER);
 
         System.println("InlineSkatingView: Main screen drawing COMPLETED");
     }
