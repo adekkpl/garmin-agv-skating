@@ -128,7 +128,7 @@ dir $env:USERPROFILE\.Garmin\ConnectIQ\Sdks\
 in settings VSCode find "monkeyC.sdkPath" and unhash proper version
 //$env:PATH += ";C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks\connectiq-sdk-win-4.1.5-2022-08-03-6e17bf167\bin"
 //$env:PATH += ";C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks\connectiq-sdk-win-7.3.1-2024-09-23-df7b5816a\bin"
-active
+active - usa always after VSCode restart and verify installation
 $env:PATH += ";C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks\connectiq-sdk-win-8.1.1-2025-03-27-66dae750f\bin"
 
 shell

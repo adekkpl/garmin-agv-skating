@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!-- Garmin Aggressive Inline Skating Tracker v2.0.0 -->
 <iq:manifest xmlns:iq="http://www.garmin.com/xml/connectiq" version="3">
-   <iq:application entry="InlineSkatingApp" id="55ea7db7193c459a90cd15d3a4ff1545" launcherIcon="@Drawables.LauncherIcon" minSdkVersion="5.0.0" name="@Strings.AppName" type="watch-app" version="2.0.0">
+   <iq:application entry="AggressiveSkatingApp" id="55ea7db7193c459a90cd15d3a4ff1545" launcherIcon="@Drawables.LauncherIcon" minSdkVersion="5.0.0" name="@Strings.AppName" type="watch-app" version="3.0.0">
       <iq:products>
          <!-- Primary target device - Forerunner 965 supports latest API -->
          <iq:product id="fr965"/>
