@@ -534,7 +534,7 @@ class SessionStats {
             "distance" => formatDistance(totalDistance),
             "speed" => formatSpeed(averageSpeed),
             "maxSpeed" => formatSpeed(maxSpeed),
-            "heartRate" => averageHeartRate.toNumber(),
+            "heartRate" => averageHeartRate.toNumber(),  // ← Sprawdź czy to jest
             "maxHeartRate" => maxHeartRate,
             "calories" => caloriesBurned
         };

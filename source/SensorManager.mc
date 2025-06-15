@@ -7,6 +7,8 @@ using Toybox.System;
 using Toybox.Math;
 using Toybox.Sensor;
 using Toybox.Position;
+using Toybox.Timer;
+
 
 class SensorManager {
     
@@ -15,12 +17,6 @@ class SensorManager {
     var currentBarometerData;
     var currentGpsData;
     var currentHeartRateData;
-    
-    // Sensor listeners
-    var accelListener;
-    var barometerListener;
-    var positionListener;
-    var heartRateListener;
     
     // Data update timer
     var updateTimer;
@@ -48,18 +44,18 @@ class SensorManager {
         // Check sensor availability
         checkSensorAvailability();
         
-        // Initialize sensor listeners
-        initializeSensorListeners();
-        
         // Setup update timer
         updateTimer = new Timer.Timer();
     }
 
     // Initialize data storage structures
     function initializeDataStorage() {
+        System.println("SensorManager: Initializing data storage");
+        
+        // Use standard dictionary syntax
         currentAccelData = {
             "x" => 0.0,
-            "y" => 0.0, 
+            "y" => 0.0,
             "z" => 0.0,
             "timestamp" => 0
         };
@@ -94,100 +90,145 @@ class SensorManager {
             altitudeHistory[i] = {"alt" => 0.0, "t" => 0};
             gpsHistory[i] = {"lat" => 0.0, "lon" => 0.0, "alt" => 0.0, "t" => 0};
         }
+        
+        System.println("SensorManager: Data storage initialized");
     }
 
     // Check which sensors are available on this device
-    function checkSensorAvailability(){
-        var sensorInfo = Sensor.getInfo();
+    function checkSensorAvailability() {
+        System.println("SensorManager: Checking sensor availability");
         
-        hasAccelerometer = (sensorInfo has :accel) && (sensorInfo.accel != null);
-        hasBarometer = (sensorInfo has :pressure) && (sensorInfo.pressure != null);
-        hasHeartRate = (sensorInfo has :heartRate) && (sensorInfo.heartRate != null);
-        hasGps = (Position has :getInfo) && (Position.getInfo().accuracy != Position.QUALITY_NOT_AVAILABLE);
+        try {
+            var sensorInfo = Sensor.getInfo();
+            
+            hasAccelerometer = (sensorInfo has :accel) && (sensorInfo.accel != null);
+            hasBarometer = (sensorInfo has :pressure) && (sensorInfo.pressure != null);
+            hasHeartRate = (sensorInfo has :heartRate) && (sensorInfo.heartRate != null);
+            
+            // Check GPS differently
+            try {
+                var posInfo = Position.getInfo();
+                hasGps = (posInfo != null);
+            } catch (ex) {
+                hasGps = false;
+            }
+            
+        } catch (exception) {
+            System.println("SensorManager: Error checking sensors: " + exception.getErrorMessage());
+            hasAccelerometer = false;
+            hasBarometer = false;
+            hasHeartRate = false;
+            hasGps = false;
+        }
         
         System.println("SensorManager: Sensor availability - Accel: " + hasAccelerometer + 
                       ", Baro: " + hasBarometer + ", GPS: " + hasGps + ", HR: " + hasHeartRate);
     }
 
-    // Initialize sensor listeners
-    function initializeSensorListeners() {
+    function startSensors() {
+        System.println("SensorManager: Starting sensors (official API)");
+        
         try {
-            if (hasAccelerometer) {
-                accelListener = new AccelerometerListener(method(:onAccelerometerData));
-            }
-            
-            if (hasBarometer) {
-                barometerListener = new BarometerListener(method(:onBarometerData));
-            }
-            
-            if (hasGps) {
-                positionListener = new PositionListener(method(:onPositionData));
-            }
-            
+            // KROK 1: Najpierw basic sensors (stary API)
             if (hasHeartRate) {
-                heartRateListener = new HeartRateListener(method(:onHeartRateData));
+                System.println("SensorManager: Enabling basic HR sensor");
+                Sensor.setEnabledSensors([Sensor.SENSOR_HEARTRATE]);
+                Sensor.enableSensorEvents(method(:onSensor));
+                System.println("SensorManager: Basic HR enabled");
             }
+            
+            // KROK 2: High-frequency sensors (nowy API) - AKCELEROMETR
+            System.println("SensorManager: Trying high-frequency accelerometer");
+            var maxSampleRate = Sensor.getMaxSampleRate();
+            System.println("SensorManager: Max sample rate = " + maxSampleRate);
+            
+            var options = {
+                :period => 3,  // 3 sekundy 
+                :accelerometer => {
+                    :enabled => true,
+                    :sampleRate => maxSampleRate > 25 ? 25 : maxSampleRate
+                }
+            };
+            
+            Sensor.registerSensorDataListener(method(:accelHistoryCallback), options);
+            System.println("SensorManager: High-frequency accelerometer registered");
+            
+            updateTimer.start(method(:updateDataProcessing), 1000, true);
             
         } catch (exception) {
-            System.println("SensorManager: Error initializing listeners: " + exception.getErrorMessage());
+            System.println("SensorManager: Official API error: " + exception.getErrorMessage());
         }
     }
 
-    // Start all available sensors
-    function startSensors() {
-        System.println("SensorManager: Starting sensors");
+    // Callback dla basic sensorów (HR)
+    function onSensor(sensorInfo as Sensor.Info) as Void {
+        System.println("onSensor: Called");
         
-        try {
-            if (hasAccelerometer && accelListener != null) {
-                Sensor.registerSensorDataListener(accelListener, {
-                    :period => 1, // 1 second intervals
-                    :accelerometer => {
-                        :enabled => true,
-                        :sampleRate => 10 // 10 Hz
-                    }
-                });
-            }
-            
-            if (hasBarometer && barometerListener != null) {
-                Sensor.registerSensorDataListener(barometerListener, {
-                    :period => 1,
-                    :pressure => { :enabled => true }
-                });
-            }
-            
-            // TODO: Enable GPS if needed
-           /*  if (hasGps && positionListener != null) {
-                Position.enableLocationEvents(Position.LOCATION_CONTINUOUS, method(:onPositionData));
-            } */
-            
-            if (hasHeartRate && heartRateListener != null) {
-                Sensor.registerSensorDataListener(heartRateListener, {
-                    :period => 1,
-                    :heartRate => { :enabled => true }
-                });
-            }
-            
-            // Start data update timer
-            updateTimer.start(method(:updateDataProcessing), 100, true); // 10Hz updates
-            
-        } catch (exception) {
-            System.println("SensorManager: Error starting sensors: " + exception.getErrorMessage());
+        if (sensorInfo != null && sensorInfo.heartRate != null) {
+            System.println("onSensor: HR = " + sensorInfo.heartRate + " bpm");
+            currentHeartRateData["heartRate"] = sensorInfo.heartRate;
+            currentHeartRateData["timestamp"] = System.getTimer();
         }
     }
+
+    // Callback dla high-frequency data (Accelerometer) - POPRAWIONY TYP
+    function accelHistoryCallback(sensorData as Sensor.SensorData) as Void {
+        System.println("accelHistoryCallback: Called");
+        
+        if (sensorData != null && sensorData.accelerometerData != null) {
+            var accelData = sensorData.accelerometerData;
+            System.println("accelHistoryCallback: Got accelerometer data");
+            System.println("accelHistoryCallback: X samples: " + accelData.x.size());
+            
+            // Zapisz najnowsze wartości
+            if (accelData.x.size() > 0) {
+                var lastIndex = accelData.x.size() - 1;
+                currentAccelData["x"] = accelData.x[lastIndex];
+                currentAccelData["y"] = accelData.y[lastIndex];
+                currentAccelData["z"] = accelData.z[lastIndex];
+                currentAccelData["timestamp"] = System.getTimer();
+                
+                System.println("accelHistoryCallback: Latest values - X:" + currentAccelData["x"] + 
+                            " Y:" + currentAccelData["y"] + " Z:" + currentAccelData["z"]);
+            }
+        }
+    }
+
+    // Dodaj tę nową funkcję:
+    function handleSensorData(sensorData) {
+        System.println("handleSensorData: Called with data");
+        
+        try {
+            if (sensorData != null) {
+                System.println("handleSensorData: Data is not null");
+                
+                // Sprawdź jakie pola ma sensorData
+                if (sensorData has :heartRate) {
+                    System.println("handleSensorData: Has heartRate field");
+                    if (sensorData.heartRate != null) {
+                        System.println("handleSensorData: HR = " + sensorData.heartRate + " bpm");
+                        currentHeartRateData["heartRate"] = sensorData.heartRate;
+                        currentHeartRateData["timestamp"] = System.getTimer();
+                    }
+                } else {
+                    System.println("handleSensorData: No heartRate field");
+                }
+            } else {
+                System.println("handleSensorData: Data is null");
+            }
+        } catch (exception) {
+            System.println("handleSensorData: Error: " + exception.getErrorMessage());
+        }
+    }
+
 
     // Stop all sensors
     function stopSensors() as Void {
         System.println("SensorManager: Stopping sensors");
         
         try {
-            // Unregister all sensor listeners
-            if (accelListener != null) {
-                Sensor.unregisterSensorDataListener();
-            }
-            
-            if (positionListener != null) {
-                Position.enableLocationEvents(Position.LOCATION_DISABLE, null);
-            }
+            // Unregister sensor listeners
+            Sensor.unregisterSensorDataListener();
             
             // Stop update timer
             if (updateTimer != null) {
@@ -199,8 +240,35 @@ class SensorManager {
         }
     }
 
-    // Accelerometer data callback
+    // SINGLE sensor data callback for ALL sensors
+    function onSensorData(sensorData) {
+        System.println("SensorManager: Sensor data received");
+        
+        try {
+            // Handle accelerometer data
+            if (sensorData has :accelerometerData && sensorData.accelerometerData != null) {
+                onAccelerometerData(sensorData);
+            }
+            
+            // Handle barometer data
+            if (sensorData has :pressure && sensorData.pressure != null) {
+                onBarometerData(sensorData);
+            }
+            
+            // Handle heart rate data
+            if (sensorData has :heartRate && sensorData.heartRate != null) {
+                onHeartRateData(sensorData);
+            }
+            
+        } catch (exception) {
+            System.println("SensorManager: Error in sensor callback: " + exception.getErrorMessage());
+        }
+    }
+
+    // Accelerometer data processing
     function onAccelerometerData(sensorData) {
+        System.println("SensorManager: Processing accelerometer data");
+        
         if (sensorData.accelerometerData != null) {
             var accelData = sensorData.accelerometerData;
             var timestamp = System.getTimer();
@@ -213,15 +281,17 @@ class SensorManager {
             // Add to history buffer
             addToHistory(accelHistory, {
                 "x" => accelData.x,
-                "y" => accelData.y, 
+                "y" => accelData.y,
                 "z" => accelData.z,
                 "t" => timestamp
             });
         }
     }
 
-    // Barometer data callback
+    // Barometer data processing
     function onBarometerData(sensorData) {
+        System.println("SensorManager: Processing barometer data");
+        
         if (sensorData.pressure != null) {
             var timestamp = System.getTimer();
             var altitude = pressureToAltitude(sensorData.pressure);
@@ -240,11 +310,14 @@ class SensorManager {
 
     // GPS position data callback
     function onPositionData(info) {
+        System.println("SensorManager: Processing GPS data");
+        
         if (info != null && info.position != null) {
             var timestamp = System.getTimer();
+            var degrees = info.position.toDegrees();
             
-            currentGpsData["latitude"] = info.position.toDegrees()[0];
-            currentGpsData["longitude"] = info.position.toDegrees()[1];
+            currentGpsData["latitude"] = degrees[0];
+            currentGpsData["longitude"] = degrees[1];
             currentGpsData["altitude"] = (info.altitude != null) ? info.altitude : 0.0;
             currentGpsData["speed"] = (info.speed != null) ? info.speed : 0.0;
             currentGpsData["accuracy"] = info.accuracy;
@@ -252,19 +325,30 @@ class SensorManager {
             
             // Add to history buffer
             addToHistory(gpsHistory, {
-                "lat" => currentGpsData["latitude"],
-                "lon" => currentGpsData["longitude"],
+                "lat" => degrees[0],
+                "lon" => degrees[1],
                 "alt" => currentGpsData["altitude"],
                 "t" => timestamp
             });
         }
     }
 
-    // Heart rate data callback
+    // Prosty Heart Rate callback
     function onHeartRateData(sensorData) {
-        if (sensorData.heartRate != null) {
-            currentHeartRateData["heartRate"] = sensorData.heartRate;
-            currentHeartRateData["timestamp"] = System.getTimer();
+        System.println("SensorManager: HR callback triggered");
+        
+        try {
+            if (sensorData has :heartRate && sensorData.heartRate != null) {
+                var hr = sensorData.heartRate;
+                System.println("SensorManager: HR = " + hr + " bpm");
+                
+                currentHeartRateData["heartRate"] = hr;
+                currentHeartRateData["timestamp"] = System.getTimer();
+            } else {
+                System.println("SensorManager: HR data is null");
+            }
+        } catch (exception) {
+            System.println("SensorManager: HR callback error: " + exception.getErrorMessage());
         }
     }
 
@@ -328,35 +412,29 @@ class SensorManager {
     }
 }
 
-// Helper classes for sensor listeners
-class AccelerometerListener {
-    var callback;
+/* 
+class HeartRateCallback {
+    var sensorManager;
     
-    function initialize(callbackMethod) {
-        callback = callbackMethod;
+    function initialize(manager) {
+        sensorManager = manager;
+    }
+    
+    function onSensorData(sensorData) {
+        System.println("HeartRateCallback: Data received");
+        
+        if (sensorManager != null) {
+            sensorManager.onHeartRateData(sensorData);
+        }
     }
 }
 
-class BarometerListener {
-    var callback;
-    
-    function initialize(callbackMethod) {
-        callback = callbackMethod;
+class BasicSensorListener {
+    function onSensorData(sensorData) {
+        System.println("BasicSensorListener: Got data");
+        if (sensorData has :heartRate && sensorData.heartRate != null) {
+            System.println("BasicSensorListener: HR = " + sensorData.heartRate);
+        }
     }
 }
-
-class PositionListener {
-    var callback;
-    
-    function initialize(callbackMethod) {
-        callback = callbackMethod;
-    }
-}
-
-class HeartRateListener {
-    var callback;
-    
-    function initialize(callbackMethod) {
-        callback = callbackMethod;
-    }
-}
+ */

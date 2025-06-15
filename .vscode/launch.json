@@ -1,0 +1,35 @@
+/* {
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "monkeyc",
+            "request": "launch",
+            "name": "Run on FR965",
+            "device": "fr965",
+            "simulator": "iq"
+        }
+    ]
+} */
+ {
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "monkeyc",
+            "request": "launch",
+            "name": "Run on FR965",
+            /* "prg": "${workspaceFolder}${pathSeparator}bin${pathSeparator}${workspaceFolderBasename}.prg",
+            "prgDebugXml": "${workspaceFolder}${pathSeparator}bin${pathSeparator}${workspaceFolderBasename}.prg.debug.xml", */
+            "stopAtLaunch": false,
+            "device": "fr965"
+        },
+        {
+            "type": "monkeyc",
+            "request": "launch",
+            "name": "Run on FR955 (backup)",
+            /* "prg": "${workspaceFolder}${pathSeparator}bin${pathSeparator}${workspaceFolderBasename}.prg",
+            "prgDebugXml": "${workspaceFolder}${pathSeparator}bin${pathSeparator}${workspaceFolderBasename}.prg.debug.xml", */
+            "stopAtLaunch": false,
+            "device": "fr955"
+        }
+    ]
+}

@@ -106,3 +106,63 @@ Testowana głównie na Garmin Forerunner 965.
 - [ ] Współdzielenie sesji ze znajomymi
 - [ ] Progres i osiągnięcia
 - [ ] Integracja z mediami społecznościowymi
+
+
+# Sprawdź co jest w folderze SDK
+dir "C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks\"
+
+# sdks pathcs
+C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks
+
+### CTRL+SHIFT + P  in vscode
+
+Monkey C: Ru
+
+
+### powershell
+# Sprawdź gdzie jest zainstalowany Connect IQ SDK
+dir $env:USERPROFILE\.Garmin\ConnectIQ\Sdks\
+
+
+# set env
+in settings VSCode find "monkeyC.sdkPath" and unhash proper version
+$env:PATH += ";C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks\connectiq-sdk-win-4.1.5-2022-08-03-6e17bf167\bin"
+$env:PATH += ";C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks\connectiq-sdk-win-7.3.1-2024-09-23-df7b5816a\bin"
+$env:PATH += ";C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks\connectiq-sdk-win-8.1.1-2025-03-27-66dae750f\bin"
+
+shell
+monkeyc --version
+
+c+s+p
+Monkey C: Verify Installation
+Monkey C: Build Current Project
+
+
+# sprawdź kompilacje
+monkeyc --jungles monkey.jungle --device fr965 --output bin/app.prg --private-key developer_key
+
+# Uruchom symulator
+monkeydo bin/app.prg fr965
+
+
+
+
+### ekran know how
+Współrzędne na ekranie 454x454:
+┌─────────────────────────────────┐ y=0
+│           Tytuł (centerX, 15)   │
+│  ● Status (25,45)               │ y=45
+│                                 │
+│ Label: (20, y)    Value: (434,y)│ y=70-200
+│ Label: (20, y)    Value: (434,y)│
+│ Label: (20, y)    Value: (434,y)│
+│                                 │
+│          Distance               │ y=400
+│         (centerX, 420)          │
+└─────────────────────────────────┘ y=454
+Kluczowe zmiennie:
+
+centerX = 227 (środek poziomo)
+centerY = 227 (środek pionowo)
+screenWidth = 454
+screenHeight = 454

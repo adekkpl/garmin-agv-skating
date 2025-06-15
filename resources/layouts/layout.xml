@@ -1,6 +1,9 @@
 <layout id="MainLayout">
+    <bitmap id="LauncherIcon" filename="../drawables/launcher_icon_65x65.png" />
     <label x="center" y="0" text="@Strings.heartRate" color="Graphics.COLOR_WHITE" justification="Graphics.TEXT_JUSTIFY_CENTER" />
     <label x="left" y="center" text="@Strings.distance" color="Graphics.COLOR_WHITE" justification="Graphics.TEXT_JUSTIFY_CENTER" />
     <label x="right" y="center" text="@Strings.speed" color="Graphics.COLOR_WHITE" justification="Graphics.TEXT_JUSTIFY_CENTER" />
     <label x="center" y="66%" text="@Strings.timer" color="Graphics.COLOR_WHITE" justification="Graphics.TEXT_JUSTIFY_CENTER" />
+    <bitmap id="monkey" filename="../drawables/monkey.png" />
+    <bitmap id="id_monkey" x="center" y="30" filename="../drawables/monkey.png" />
 </layout>

@@ -1,3 +1,4 @@
+// AdditionalViews.mc
 // Garmin Aggressive Inline Skating Tracker v2.0.0
 // Additional Views (About, Statistics, etc.)
 using Toybox.Lang;
@@ -6,7 +7,7 @@ using Toybox.Graphics;
 using Toybox.System;
 using Toybox.Math;
 
-
+// View.onUpdate   delete
 // About view showing app information
 class AboutView extends WatchUi.View {
     

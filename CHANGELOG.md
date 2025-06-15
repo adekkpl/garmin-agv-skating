@@ -102,3 +102,5 @@ a projekt używa [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `🏗️ Architektura` - zmiany w architekturze/strukturze
 - `⚠️ Przestarzałe` - funkcje oznaczone jako przestarzałe
 - `🔒 Bezpieczeństwo` - poprawki bezpieczeństwa
+
+
