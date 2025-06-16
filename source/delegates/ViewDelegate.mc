@@ -72,13 +72,13 @@ class ViewDelegate extends WatchUi.BehaviorDelegate {
     }
 
 
-    function handleStartButton() {
+    /* function handleStartButton() {
         System.println("ViewDelegate: Handling START button for session control");
         
         try {
             var app = Application.getApp();
             if (app != null) {
-                var sessionManager = app.getSessionManager();
+                var sessionManager = app.getSessionManager();  // ✅ NOWA LOGIKA
                 if (sessionManager != null) {
                     if (sessionManager.isActive()) {
                         app.stopAndSaveSession();
@@ -88,7 +88,42 @@ class ViewDelegate extends WatchUi.BehaviorDelegate {
                         System.println("ViewDelegate: Session started by user");
                     }
                     return true;
+                } else {
+                    System.println("ViewDelegate: SessionManager is null");
                 }
+            } else {
+                System.println("ViewDelegate: App is null");
+            }
+        } catch (exception) {
+            System.println("ViewDelegate: Error handling START: " + exception.getErrorMessage());
+        }
+        
+        return false;
+    } */
+
+    function handleStartButton() {
+        System.println("ViewDelegate: Handling START button for session control");
+        
+        try {
+            var app = Application.getApp();
+            if (app != null) {
+                var sessionManager = app.getSessionManager();
+                if (sessionManager != null) {
+                    if (sessionManager.isActive()) {
+                        // Session aktywna - pokaż menu Stop (bez wyjścia z aplikacji)
+                        showStopSessionMenu(false);
+                        System.println("ViewDelegate: Showing stop session menu");
+                    } else {
+                        // Brak sesji - rozpocznij nową
+                        app.startSession();
+                        System.println("ViewDelegate: Session started by user");
+                    }
+                    return true;
+                } else {
+                    System.println("ViewDelegate: SessionManager is null");
+                }
+            } else {
+                System.println("ViewDelegate: App is null");
             }
         } catch (exception) {
             System.println("ViewDelegate: Error handling START: " + exception.getErrorMessage());
@@ -105,88 +140,58 @@ class ViewDelegate extends WatchUi.BehaviorDelegate {
             if (app != null) {
                 var sessionManager = app.getSessionManager();
                 if (sessionManager != null && sessionManager.isActive()) {
-                    // Session active - show confirmation
-                    var confirmation = new WatchUi.Confirmation("Stop session and exit?");
-                    WatchUi.pushView(confirmation, new ExitConfirmationDelegate(), WatchUi.SLIDE_UP);
+                    // Session aktywna - pokaż menu Stop z opcją wyjścia
+                    showStopSessionMenu(true);
                     return true;
                 } else {
-                    // No active session - allow exit
+                    // Brak aktywnej sesji - pozwól na wyjście
                     System.println("ViewDelegate: No active session - allowing exit");
                     return false;  // This allows app to exit
                 }
             }
+
         } catch (exception) {
             System.println("ViewDelegate: Error handling BACK: " + exception.getErrorMessage());
         }
         
         return false;
     }
-
-    // START button - same logic as old version
-    function onStartButton() {
-        System.println("ViewDelegate: START pressed - controlling session");
-        
-        // Simple debounce protection
-        var currentTime = System.getTimer();
-        if (currentTime - lastButtonPress < BUTTON_DEBOUNCE_TIME) {
-            System.println("ViewDelegate: Ignoring rapid START press");
-            return true;
-        }
-        lastButtonPress = currentTime;
-        
-        // Use same logic as old version
+    
+    function showStopSessionMenu(exitAfterAction) {
         try {
-            var sessionStats = app.getSessionStats();
-            if (sessionStats != null && sessionStats.isActive()) {
-                // Stop current session
-                app.stopAndSaveSession();
-                System.println("ViewDelegate: Session stopped by user");
-            } else {
-                // Start new session
-                app.startSession();
-                System.println("ViewDelegate: Session started by user");
+            var app = Application.getApp();
+            if (app == null) {
+                return;
             }
+            
+            var sessionManager = app.getSessionManager();
+            if (sessionManager == null || !sessionManager.isActive()) {
+                return;
+            }
+            
+            var title = exitAfterAction ? "Stop & Exit?" : "Stop Session?";
+            var menu = new WatchUi.Menu2({:title => title});
+            
+            // Opcja 1: Zapisz i wyjdź/zakończ
+            var saveText = exitAfterAction ? "Save & Quit" : "Save & Stop";
+            menu.addItem(new WatchUi.MenuItem(saveText, "Save to Garmin Connect", :save_quit, null));
+            
+            // Opcja 2: Odrzuć i wyjdź/zakończ  
+            var discardText = exitAfterAction ? "Discard & Exit" : "Discard & Stop";
+            menu.addItem(new WatchUi.MenuItem(discardText, "Don't save session", :discard_exit, null));
+            
+            // Opcja 3: Anuluj
+            menu.addItem(new WatchUi.MenuItem("Cancel", "Continue session", :cancel, null));
+            
+            WatchUi.pushView(menu, new ViewStopSessionDelegate(app, exitAfterAction), WatchUi.SLIDE_UP);
+            
+            System.println("ViewDelegate: Stop session menu shown (exit=" + exitAfterAction + ")");
+            
         } catch (exception) {
-            System.println("ViewDelegate: Error controlling session: " + exception.getErrorMessage());
+            System.println("ViewDelegate: Error showing stop session menu: " + exception.getErrorMessage());
         }
-        
-        return true;
     }
 
-    function onStartPress() {
-        System.println("ViewDelegate: START pressed - controlling session");
-        
-        // Simple debounce protection
-        var currentTime = System.getTimer();
-        if (currentTime - lastButtonPress < BUTTON_DEBOUNCE_TIME) {
-            System.println("ViewDelegate: Ignoring rapid START press");
-            return true;
-        }
-        lastButtonPress = currentTime;
-        
-        // FIXED: Use SessionManager instead of SessionStats
-        try {
-            if (app != null) {
-                var sessionManager = app.getSessionManager();
-                if (sessionManager != null) {
-                    if (sessionManager.isActive()) {
-                        // Stop current session
-                        app.stopAndSaveSession();
-                        System.println("ViewDelegate: Session stopped by user");
-                    } else {
-                        // Start new session
-                        app.startSession();
-                        System.println("ViewDelegate: Session started by user");
-                    }
-                }
-            }
-        } catch (exception) {
-            System.println("ViewDelegate: Error controlling session: " + exception.getErrorMessage());
-        }
-        
-        return true;
-    }    
-    
     // ENTER button - next view
     function onEnterButton() {
         System.println("ViewDelegate: ENTER pressed - next view");
@@ -285,9 +290,39 @@ class ViewDelegate extends WatchUi.BehaviorDelegate {
     }
     
     // Override onSelect to prevent conflicts
+    /* function onSelect() {
+        System.println("ViewDelegate: Select pressed - treating as START button");
+        return delegateToMainDelegate(new WatchUi.KeyEvent(WatchUi.KEY_START, {
+            :press => true,
+            :longPress => false
+        }));
+    } */
     function onSelect() {
+        System.println("ViewDelegate: Select pressed - session control");
+        
+        try {
+            var app = Application.getApp();
+            if (app != null) {
+                var sessionManager = app.getSessionManager();
+                if (sessionManager != null) {
+                    if (sessionManager.isActive()) {
+                        app.stopAndSaveSession();
+                        System.println("ViewDelegate: Session stopped by user");
+                    } else {
+                        app.startSession();
+                        System.println("ViewDelegate: Session started by user");
+                    }
+                    return true;
+                }
+            }
+        } catch (exception) {
+            System.println("ViewDelegate: Error in onSelect session control: " + exception.getErrorMessage());
+        }
+        
+        // Fallback - switch view if session control fails
         return onEnterButton();
     }
+
 }
 
 // View menu delegate
@@ -331,6 +366,65 @@ class ViewMenuDelegate extends WatchUi.Menu2InputDelegate {
             }
         } catch (exception) {
             System.println("ViewMenuDelegate: Error switching view: " + exception.getErrorMessage());
+        }
+        
+        WatchUi.popView(WatchUi.SLIDE_DOWN);
+    }
+    
+    function onBack() {
+        WatchUi.popView(WatchUi.SLIDE_DOWN);
+    }
+}
+
+class ViewStopSessionDelegate extends WatchUi.Menu2InputDelegate {
+    var app;
+    var exitAfterAction; // czy wyjść z aplikacji po akcji
+    
+    function initialize(appRef, shouldExit) {
+        Menu2InputDelegate.initialize();
+        app = appRef;
+        exitAfterAction = shouldExit;
+    }
+    
+    function onSelect(item) {
+        var id = item.getId();
+        
+        try {
+            var sessionManager = app.getSessionManager();
+            if (sessionManager == null) {
+                WatchUi.popView(WatchUi.SLIDE_DOWN);
+                return;
+            }
+            
+            switch (id) {
+                case :save_quit:
+                    // Zapisz sesję do Garmin Connect
+                    sessionManager.stopAndSaveSession();
+                    System.println("ViewStopSessionDelegate: Session saved to Garmin Connect");
+                    
+                    if (exitAfterAction) {
+                        System.exit(); // Wyjdź z aplikacji
+                    }
+                    break;
+                    
+                case :discard_exit:
+                    // Nie zapisuj sesji - odrzuć
+                    sessionManager.discardSession(); 
+                    System.println("ViewStopSessionDelegate: Session discarded");
+                    
+                    if (exitAfterAction) {
+                        System.exit(); // Wyjdź z aplikacji
+                    }
+                    break;
+                    
+                case :cancel:
+                    // Nic nie rób - tylko zamknij menu
+                    System.println("ViewStopSessionDelegate: Action cancelled");
+                    break;
+            }
+            
+        } catch (exception) {
+            System.println("ViewStopSessionDelegate: Error: " + exception.getErrorMessage());
         }
         
         WatchUi.popView(WatchUi.SLIDE_DOWN);

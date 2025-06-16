@@ -55,6 +55,8 @@ class SessionManager {
     
     function setStateChangeCallback(callback) {
         stateChangeCallback = callback;
+        // Dodatkowe logowanie dla debugowania
+        System.println("SessionManager: State change callback set");
     }
     
     // Session control methods
@@ -385,9 +387,35 @@ class SessionManager {
     }
     
     // Notify state change
-    function notifyStateChange() {
+    /* function notifyStateChange() {
         if (stateChangeCallback != null) {
             stateChangeCallback.invoke(getStateString());
+        }
+    } */
+    function notifyStateChange() {
+        // Wywołaj callback jeśli istnieje (najlepsze rozwiązanie)
+        if (stateChangeCallback != null) {
+            try {
+                stateChangeCallback.invoke(getStateString());
+                System.println("SessionManager: State change callback invoked");
+            } catch (exception) {
+                System.println("SessionManager: Error in state callback: " + exception.getErrorMessage());
+                
+                // Fallback - jeśli callback się nie udał, zrób bezpośrednie update
+                try {
+                    WatchUi.requestUpdate();
+                } catch (updateException) {
+                    System.println("SessionManager: Error requesting update: " + updateException.getErrorMessage());
+                }
+            }
+        } else {
+            // Fallback - jeśli callback nie jest ustawiony
+            System.println("SessionManager: No state callback set, using direct update");
+            try {
+                WatchUi.requestUpdate();
+            } catch (exception) {
+                System.println("SessionManager: Error requesting update: " + exception.getErrorMessage());
+            }
         }
     }
     

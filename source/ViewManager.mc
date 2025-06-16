@@ -132,6 +132,9 @@ class ViewManager {
         }
         
         try {
+            // Cleanup starego view (szczególnie timer w MainView)
+            cleanupCurrentView();
+
             currentViewType = viewType;
             var newView = getCurrentView();
             
@@ -247,9 +250,53 @@ class ViewManager {
         WatchUi.requestUpdate();
     }
     
+    function cleanupCurrentView() {
+        try {
+            // Cleanup MainView timer jeśli istnieje
+            if (mainView != null && mainView has :cleanup) {
+                mainView.cleanup();
+            }
+            
+            // Możesz dodać cleanup dla innych view jeśli potrzebne
+            if (statsView != null && statsView has :cleanup) {
+                statsView.cleanup();
+            }
+            
+            if (tricksView != null && tricksView has :cleanup) {
+                tricksView.cleanup();
+            }
+            
+            if (rotationView != null && rotationView has :cleanup) {
+                rotationView.cleanup();
+            }
+            
+            if (progressView != null && progressView has :cleanup) {
+                progressView.cleanup();
+            }
+            
+            if (settingsView != null && settingsView has :cleanup) {
+                settingsView.cleanup();
+            }
+            
+            System.println("ViewManager: Current view cleaned up");
+            
+        } catch (exception) {
+            System.println("ViewManager: Error in cleanup: " + exception.getErrorMessage());
+        }
+    }
+
     // Cleanup all views
     function cleanup() {
         try {
+            cleanupCurrentView();
+
+            // Reset view references
+            /* mainView = null;
+            statsView = null;
+            tricksView = null;
+            rotationView = null;
+            progressView = null;
+            settingsView = null; */
             if (mainView != null) { mainView.cleanup(); }
             if (statsView != null) { statsView.cleanup(); }
             if (tricksView != null) { tricksView.cleanup(); }

@@ -370,6 +370,9 @@ class AggressiveSkatingApp extends Application.AppBase {
             if (viewManager != null) {
                 viewManager.onSessionStateChange(newState);
             }
+
+            // Wymuszaj odświeżenie ekranu 
+            WatchUi.requestUpdate();            
             
         } catch (exception) {
             logError("onSessionStateChange", exception);

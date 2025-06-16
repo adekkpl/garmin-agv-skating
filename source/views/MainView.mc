@@ -6,14 +6,16 @@ using Toybox.WatchUi;
 using Toybox.Graphics;
 using Toybox.System;
 using Toybox.Math;
+using Toybox.Timer;
 
 class MainView extends WatchUi.View {
     
     var app;
     var screenWidth;
     var screenHeight;
-    var centerX;
-    var centerY;
+    /* var centerX;
+    var centerY; */
+    var width, height, centerX, centerY;
     
     // Animation state
     var trickAnimation = false;
@@ -23,11 +25,18 @@ class MainView extends WatchUi.View {
     // Status indicators
     var gpsStatus = false;
     var hrStatus = false;
+
+    // Timer
+    var updateTimer;
+    var isTimerActive = false;
     
     function initialize(appRef) {
         View.initialize();
         app = appRef;
         
+        // Initialize timer
+        updateTimer = new Timer.Timer();
+
         // Get screen dimensions
         var deviceSettings = System.getDeviceSettings();
         screenWidth = deviceSettings.screenWidth;
@@ -45,10 +54,13 @@ class MainView extends WatchUi.View {
     function onShow() {
         System.println("MainView: View shown");
         WatchUi.requestUpdate();
+        startUpdateTimer();
     }
     
     function onHide() {
         System.println("MainView: View hidden");
+        // Zatrzymaj timer gdy view jest ukryty. Czy potrzebne ??
+        stopUpdateTimer();
     }
     
     function onUpdate(dc) {
@@ -105,7 +117,7 @@ class MainView extends WatchUi.View {
             
             // Timer label
             dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(centerX, centerY + 25, Graphics.FONT_TINY, 
+            dc.drawText(centerX, centerY - 25, Graphics.FONT_TINY, 
                        "SESSION TIME", Graphics.TEXT_JUSTIFY_CENTER);
                        
         } catch (exception) {
@@ -334,9 +346,57 @@ class MainView extends WatchUi.View {
             System.println("MainView: Error in onSessionStateChange: " + exception.getErrorMessage());
         }
     }
-    
+
+    function startUpdateTimer() {
+        if (!isTimerActive && updateTimer != null) {
+            try {
+                var interval = 1000; // Domyślnie 1 sekunda
+
+                /* var sessionManager = app.getSessionManager();
+                // OPCJONALNIE: Zwiększ częstotliwość dla aktywnej sesji
+                if (sessionManager != null && sessionManager.isActive()) {
+                    interval = 500; // Co 0.5 sekundy dla aktywnej sesji
+                } */
+
+                // Odświeżaj co 1 sekundę (1000ms)
+                updateTimer.start(method(:onTimerUpdate), interval, true);
+                isTimerActive = true;
+                System.println("MainView: Update timer started");
+            } catch (exception) {
+                System.println("MainView: Error starting timer: " + exception.getErrorMessage());
+            }
+        }
+    }
+    function stopUpdateTimer() {
+        if (isTimerActive && updateTimer != null) {
+            try {
+                updateTimer.stop();
+                isTimerActive = false;
+                System.println("MainView: Update timer stopped");
+            } catch (exception) {
+                System.println("MainView: Error stopping timer: " + exception.getErrorMessage());
+            }
+        }
+    }
+
+    // Callback dla timera - wywoływany co sekundę
+    function onTimerUpdate() {
+        try {
+            // Sprawdź czy sesja jest aktywna
+            var sessionManager = app.getSessionManager();
+            if (sessionManager != null && sessionManager.isActive()) {
+                // Sesja aktywna - odśwież ekran
+                WatchUi.requestUpdate();
+            }
+        } catch (exception) {
+            System.println("MainView: Error in timer update: " + exception.getErrorMessage());
+        }
+    }
+
     // Cleanup
     function cleanup() {
+        stopUpdateTimer();
+        updateTimer = null;
         System.println("MainView: Cleanup completed");
     }
 }

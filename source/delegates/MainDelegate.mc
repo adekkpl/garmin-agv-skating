@@ -73,7 +73,7 @@ class MainDelegate extends WatchUi.BehaviorDelegate {
     }
 
     // Handle key released for START button
-    function onStartPress() {
+    /* function onStartPress() {
         System.println("MainDelegate: START pressed - controlling session");
         
         // Simple debounce protection
@@ -109,6 +109,44 @@ class MainDelegate extends WatchUi.BehaviorDelegate {
         } catch (exception) {
             System.println("MainDelegate: Error controlling session: " + exception.getErrorMessage());
             logError("START button session control", exception);
+        }
+        
+        return true;
+    } */
+    function onStartPress() {
+        System.println("MainDelegate: START pressed - controlling session");
+        
+        // Simple debounce protection
+        var currentTime = System.getTimer();
+        if (currentTime - lastButtonPress < BUTTON_DEBOUNCE_TIME) {
+            System.println("MainDelegate: Ignoring rapid START press");
+            return true;
+        }
+        lastButtonPress = currentTime;
+        
+        try {
+            if (app != null) {
+                var sessionManager = app.getSessionManager();
+                if (sessionManager != null) {
+                    if (sessionManager.isActive()) {
+                        // Session aktywna - pokaż menu Stop
+                        showStopSessionMenu(false); // false = nie wychodź z aplikacji
+                        System.println("MainDelegate: Showing stop session menu");
+                    } else {
+                        // Brak sesji - rozpocznij nową
+                        app.startSession();
+                        // Wymuszaj natychmiastowe odświeżenie timera
+                        WatchUi.requestUpdate();
+                        System.println("MainDelegate: Session started by user");
+                    }
+                } else {
+                    System.println("MainDelegate: SessionManager is null");
+                }
+            } else {
+                System.println("MainDelegate: App reference is null");
+            }
+        } catch (exception) {
+            System.println("MainDelegate: Error controlling session: " + exception.getErrorMessage());
         }
         
         return true;
@@ -232,7 +270,7 @@ class MainDelegate extends WatchUi.BehaviorDelegate {
     }
         
     // Show exit confirmation when on main view
-    function showExitConfirmation() {
+    /* function showExitConfirmation() {
         try {
             var sessionManager = app.getSessionManager();
             
@@ -249,8 +287,55 @@ class MainDelegate extends WatchUi.BehaviorDelegate {
         } catch (exception) {
             System.println("MainDelegate: Error showing exit confirmation: " + exception.getErrorMessage());
         }
+    } */
+    function showExitConfirmation() {
+        try {
+            var sessionManager = app.getSessionManager();
+            
+            if (sessionManager != null && sessionManager.isActive()) {
+                // Session aktywna - pokaż menu Save/Discard/Cancel z opcją wyjścia
+                showStopSessionMenu(true); // true = wyjdź z aplikacji po akcji
+            } else {
+                // Brak aktywnej sesji - pokaż proste potwierdzenie wyjścia
+                var confirmation = new WatchUi.Confirmation("Exit application?");
+                WatchUi.pushView(confirmation, new SimpleExitDelegate(), WatchUi.SLIDE_UP);
+            }
+            
+        } catch (exception) {
+            System.println("MainDelegate: Error showing exit confirmation: " + exception.getErrorMessage());
+        }
     }
     
+    function showStopSessionMenu(exitAfterAction) {
+        try {
+            var sessionManager = app.getSessionManager();
+            if (sessionManager == null || !sessionManager.isActive()) {
+                return;
+            }
+            
+            var title = exitAfterAction ? "Stop & Exit?" : "Stop Session?";
+            var menu = new WatchUi.Menu2({:title => title});
+            
+            // Opcja 1: Zapisz i wyjdź/zakończ
+            var saveText = exitAfterAction ? "Save & Quit" : "Save & Stop";
+            menu.addItem(new WatchUi.MenuItem(saveText, "Save to Garmin Connect", :save_quit, null));
+            
+            // Opcja 2: Odrzuć i wyjdź/zakończ  
+            var discardText = exitAfterAction ? "Discard & Exit" : "Discard & Stop";
+            menu.addItem(new WatchUi.MenuItem(discardText, "Don't save session", :discard_exit, null));
+            
+            // Opcja 3: Anuluj
+            menu.addItem(new WatchUi.MenuItem("Cancel", "Continue session", :cancel, null));
+            
+            WatchUi.pushView(menu, new StopSessionDelegate(app, exitAfterAction), WatchUi.SLIDE_UP);
+            
+            System.println("MainDelegate: Stop session menu shown (exit=" + exitAfterAction + ")");
+            
+        } catch (exception) {
+            System.println("MainDelegate: Error showing stop session menu: " + exception.getErrorMessage());
+        }
+    }
+
     // MENU button - show main menu
     function onMenu() {
         System.println("MainDelegate: MENU pressed");
@@ -427,4 +512,64 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
         System.println("AGV-ERROR [" + context + "]: " + exception.getErrorMessage());
     }
 
+}
+
+// Stop/Exit confirmation delegate with Save/Discard options
+class StopSessionDelegate extends WatchUi.Menu2InputDelegate {
+    var app;
+    var exitAfterAction; // czy wyjść z aplikacji po akcji
+    
+    function initialize(appRef, shouldExit) {
+        Menu2InputDelegate.initialize();
+        app = appRef;
+        exitAfterAction = shouldExit;
+    }
+    
+    function onSelect(item) {
+        var id = item.getId();
+        
+        try {
+            var sessionManager = app.getSessionManager();
+            if (sessionManager == null) {
+                WatchUi.popView(WatchUi.SLIDE_DOWN);
+                return;
+            }
+            
+            switch (id) {
+                case :save_quit:
+                    // Zapisz sesję do Garmin Connect
+                    sessionManager.stopAndSaveSession();
+                    System.println("StopSessionDelegate: Session saved to Garmin Connect");
+                    
+                    if (exitAfterAction) {
+                        System.exit(); // Wyjdź z aplikacji
+                    }
+                    break;
+                    
+                case :discard_exit:
+                    // Nie zapisuj sesji - odrzuć
+                    sessionManager.discardSession(); 
+                    System.println("StopSessionDelegate: Session discarded");
+                    
+                    if (exitAfterAction) {
+                        System.exit(); // Wyjdź z aplikacji
+                    }
+                    break;
+                    
+                case :cancel:
+                    // Nic nie rób - tylko zamknij menu
+                    System.println("StopSessionDelegate: Action cancelled");
+                    break;
+            }
+            
+        } catch (exception) {
+            System.println("StopSessionDelegate: Error: " + exception.getErrorMessage());
+        }
+        
+        WatchUi.popView(WatchUi.SLIDE_DOWN);
+    }
+    
+    function onBack() {
+        WatchUi.popView(WatchUi.SLIDE_DOWN);
+    }
 }

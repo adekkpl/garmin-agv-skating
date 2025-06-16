@@ -38,6 +38,9 @@ class SensorManager {
     var accelEnabled = false;
     var gyroEnabled = false;
     var barometerEnabled = false;
+
+    // State change callback
+    var stateChangeCallback;
     
     // Update timer
     var updateTimer;
@@ -375,6 +378,31 @@ class SensorManager {
         }
         
         System.println("SensorManager: Statistics reset");
+    }
+
+    function notifyStateChange() {
+
+        // Wywołaj callback jeśli istnieje
+        if (stateChangeCallback != null) {
+            stateChangeCallback.invoke(getStateString());
+        }
+        
+        
+        try {
+            // Wymuszaj odświeżenie ekranu przy zmianie stanu sesji
+            WatchUi.requestUpdate();
+            System.println("SessionManager: Display update requested for state change");
+        } catch (exception) {
+            System.println("SessionManager: Error requesting display update: " + exception.getErrorMessage());
+        }
+    }  
+
+    // Returns a string representing the current sensor state
+    function getStateString() {
+        return "Sensors initialized: " + sensorsInitialized +
+               ", HR: " + currentHeartRate +
+               ", Max HR: " + maxHeartRate +
+               ", Avg HR: " + avgHeartRate;
     }
     
     // Cleanup
