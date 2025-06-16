@@ -152,13 +152,15 @@ class AggressiveSkatingApp extends Application.AppBase {
                 return false;
             }
             
-            // Initialize trick detection
+            /* 
+            // Initialize trick detection - moved to sensors 
             logDevice("Creating TrickDetector");
             trickDetector = new TrickDetector();
             if (trickDetector == null) {
                 logCritical("Failed to create TrickDetector");
                 return false;
-            }
+            } */
+            logDevice("TrickDetector will be initialized by SensorManager");
             
             // Initialize rotation detection
             logDevice("Creating RotationDetector");
@@ -184,24 +186,73 @@ class AggressiveSkatingApp extends Application.AppBase {
     function setupComponentConnections() {
         try {
             // Connect session manager with other components
-            sessionManager.setGPSTracker(gpsTracker);
-            sessionManager.setSessionStats(sessionStats);
-            sessionManager.setActivityRecorder(activityRecorder);
+            if (sessionManager != null) {
+                sessionManager.setGPSTracker(gpsTracker);
+                sessionManager.setSessionStats(sessionStats);
+                sessionManager.setActivityRecorder(activityRecorder);
+            }
             
-            // Connect sensor manager with detectors
-            sensorManager.setTrickDetector(trickDetector);
-            sensorManager.setRotationDetector(rotationDetector);
-            sensorManager.setGPSTracker(gpsTracker);
+            // Connect sensor manager with detectors - sprawdź czy metody istnieją
+            if (sensorManager != null) {
+                // Tylko wywołuj metody jeśli istnieją
+                try {
+                    if (sensorManager has :setTrickDetector) {
+                        sensorManager.setTrickDetector(trickDetector);
+                    }
+                    if (sensorManager has :setRotationDetector) {
+                        sensorManager.setRotationDetector(rotationDetector);
+                    }
+                    if (sensorManager has :setGPSTracker) {
+                        sensorManager.setGPSTracker(gpsTracker);
+                    }
+                } catch (methodException) {
+                    System.println("SensorManager methods not available: " + methodException.getErrorMessage());
+                }
+            }
             
-            // Setup callbacks
-            trickDetector.setTrickDetectedCallback(method(:onTrickDetected));
-            rotationDetector.setRotationDetectedCallback(method(:onRotationDetected));
-            gpsTracker.setPositionUpdateCallback(method(:onPositionUpdate));
+            // Setup callbacks - sprawdź czy metody istnieją
+            if (trickDetector != null) {
+                try {
+                    if (trickDetector has :setTrickDetectedCallback) {
+                        trickDetector.setTrickDetectedCallback(method(:onTrickDetected));
+                    }
+                } catch (callbackException) {
+                    System.println("TrickDetector callback not available: " + callbackException.getErrorMessage());
+                }
+            }
+            
+            if (rotationDetector != null) {
+                try {
+                    if (rotationDetector has :setRotationDetectedCallback) {
+                        rotationDetector.setRotationDetectedCallback(method(:onRotationDetected));
+                    }
+                } catch (callbackException) {
+                    System.println("RotationDetector callback not available: " + callbackException.getErrorMessage());
+                }
+            }
+            
+            if (gpsTracker != null) {
+                try {
+                    if (gpsTracker has :setPositionUpdateCallback) {
+                        gpsTracker.setPositionUpdateCallback(method(:onPositionUpdate));
+                    }
+                } catch (callbackException) {
+                    System.println("GPSTracker callback not available: " + callbackException.getErrorMessage());
+                }
+            }
             
             // Setup session state callbacks
-            sessionManager.setStateChangeCallback(method(:onSessionStateChange));
+            if (sessionManager != null) {
+                try {
+                    if (sessionManager has :setStateChangeCallback) {
+                        sessionManager.setStateChangeCallback(method(:onSessionStateChange));
+                    }
+                } catch (callbackException) {
+                    System.println("SessionManager callback not available: " + callbackException.getErrorMessage());
+                }
+            }
             
-            logDevice("Component connections established");
+            logDevice("Component connections established (with safety checks)");
             
         } catch (exception) {
             logError("setupComponentConnections", exception);
@@ -402,3 +453,4 @@ class ErrorView extends WatchUi.View {
                    Graphics.FONT_TINY, errorMessage, Graphics.TEXT_JUSTIFY_CENTER);
     }
 }
+

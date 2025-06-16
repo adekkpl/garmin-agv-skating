@@ -21,6 +21,7 @@ class GPSTracker {
     var historyIndex = 0;
     
     // Distance calculation
+    var currentPosition;
     var lastValidPosition;
     var positionUpdateCallback;
     var accuracyThreshold = Position.QUALITY_GOOD;
@@ -317,7 +318,7 @@ class GPSTracker {
         return gpsQuality >= accuracyThreshold;
     }
     
-    function getGPSQualityString() {
+    /* function getGPSQualityString() {
         switch (gpsQuality) {
             case Position.QUALITY_NOT_AVAILABLE:
                 return "NO GPS";
@@ -331,6 +332,16 @@ class GPSTracker {
                 return "GOOD";
             default:
                 return "UNKNOWN";
+        }
+    } */
+    function getGPSQualityString() {
+        // Simple GPS quality indicator
+        if (isTracking && currentPosition != null) {
+            return "Good";
+        } else if (isTracking) {
+            return "Searching";
+        } else {
+            return "Disabled";
         }
     }
     

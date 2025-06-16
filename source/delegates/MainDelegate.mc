@@ -1,4 +1,4 @@
-// MainDelegate.mc
+// /delegates/MainDelegate.mc
 // Garmin Aggressive Inline Skating Tracker v3.0.0
 // Main Input Delegate with Long Press Support
 using Toybox.Lang;
@@ -34,23 +34,28 @@ class MainDelegate extends WatchUi.BehaviorDelegate {
         var key = keyEvent.getKey();
         System.println("MainDelegate: Key event = " + key);
         
-        // Use standard key handling for most buttons
+        // FIXED: Force START button to control session
         switch (key) {
-            case 4:  // START button - session control
+            case 4:  // START button - FORCE session control
             case WatchUi.KEY_START:
+                System.println("MainDelegate: START button detected - calling onStartPress");
                 return onStartPress();
             case WatchUi.KEY_ENTER:
             case 7:  // CENTER button alternatives
             case 12:
+                System.println("MainDelegate: ENTER button detected - switching view");
                 return onEnterButton();
             case 13: // UP button
             case WatchUi.KEY_UP:
+                System.println("MainDelegate: UP button detected - next view");
                 return onUpButton();
             case 8:  // DOWN button
             case WatchUi.KEY_DOWN:
+                System.println("MainDelegate: DOWN button detected - previous view");
                 return onDownButton();
-            case 5:  // BACK button
+            case 5:  // BACK button - FORCE app exit logic
             case WatchUi.KEY_ESC:
+                System.println("MainDelegate: BACK button detected - calling onBackButton");
                 return onBackButton();
             default:
                 System.println("MainDelegate: Unhandled key - " + key);
@@ -61,18 +66,13 @@ class MainDelegate extends WatchUi.BehaviorDelegate {
     // Also handle key pressed for immediate feedback
     function onKeyPressed(keyEvent) {
         var key = keyEvent.getKey();
-        System.println("MainDelegate: Key pressed = " + key);
+        System.println("MainDelegate: Key pressed = " + key + " (will be handled by onKey)");
         
-        // Immediate feedback for START button
-        if (key == 4 || key == WatchUi.KEY_START) {
-            // Could add immediate visual feedback here
-            return true;
-        }
-        
-        return false; // Let onKey handle the actual logic
+        // FIXED: Don't intercept any keys - let onKey handle everything
+        return false; // Always let onKey handle the logic
     }
-    
-    // START button - session control like in old version
+
+    // Handle key released for START button
     function onStartPress() {
         System.println("MainDelegate: START pressed - controlling session");
         
@@ -84,19 +84,27 @@ class MainDelegate extends WatchUi.BehaviorDelegate {
         }
         lastButtonPress = currentTime;
         
-        // Use same logic as old version - check SessionStats and call app methods
+        // FIXED: Use SessionManager instead of SessionStats
         try {
-            var sessionStats = app.getSessionStats();
-            if (sessionStats != null && sessionStats.isActive()) {
-                // Stop current session
-                app.stopAndSaveSession();
-                System.println("MainDelegate: Session stopped by user");
-                logDevice("Session stopped via START button");
+            if (app != null) {
+                var sessionManager = app.getSessionManager();
+                if (sessionManager != null) {
+                    if (sessionManager.isActive()) {
+                        // Stop current session
+                        app.stopAndSaveSession();
+                        System.println("MainDelegate: Session stopped by user");
+                        logDevice("Session stopped via START button");
+                    } else {
+                        // Start new session
+                        app.startSession();
+                        System.println("MainDelegate: Session started by user");
+                        logDevice("Session started via START button");
+                    }
+                } else {
+                    System.println("MainDelegate: SessionManager is null");
+                }
             } else {
-                // Start new session
-                app.startSession();
-                System.println("MainDelegate: Session started by user");
-                logDevice("Session started via START button");
+                System.println("MainDelegate: App reference is null");
             }
         } catch (exception) {
             System.println("MainDelegate: Error controlling session: " + exception.getErrorMessage());
@@ -198,34 +206,44 @@ class MainDelegate extends WatchUi.BehaviorDelegate {
         System.println("MainDelegate: BACK pressed");
         
         try {
-            if (viewManager != null) {
-                if (viewManager.isOnMainView()) {
-                    // On main view - show exit confirmation
-                    showExitConfirmation();
-                } else {
-                    // On other view - return to main
-                    viewManager.switchToMainView();
+            // Check if session is active using SessionManager
+            var sessionActive = false;
+            if (app != null) {
+                var sessionManager = app.getSessionManager();
+                if (sessionManager != null) {
+                    sessionActive = sessionManager.isActive();
                 }
             }
+            
+            if (sessionActive) {
+                // Session is active - show confirmation
+                showExitConfirmation();
+                return true;
+            } else {
+                // No active session - allow exit
+                System.println("MainDelegate: No active session - allowing exit");
+                return false;  // This allows app to exit
+            }
+            
         } catch (exception) {
             System.println("MainDelegate: Error in onBackButton: " + exception.getErrorMessage());
+            return false;  // Allow exit on error
         }
-        
-        return true;
     }
-    
+        
     // Show exit confirmation when on main view
     function showExitConfirmation() {
         try {
             var sessionManager = app.getSessionManager();
             
-            if (sessionManager != null && !sessionManager.isStopped()) {
-                // Session is active - show session options
-                showSessionMenu();
+            if (sessionManager != null && sessionManager.isActive()) {
+                // Session is active - show stop confirmation
+                var confirmation = new WatchUi.Confirmation("Stop session and exit?");
+                WatchUi.pushView(confirmation, new ExitConfirmationDelegate(), WatchUi.SLIDE_UP);
             } else {
                 // No active session - show simple exit confirmation
                 var confirmation = new WatchUi.Confirmation("Exit application?");
-                WatchUi.pushView(confirmation, new ExitConfirmationDelegate(), WatchUi.SLIDE_UP);
+                WatchUi.pushView(confirmation, new SimpleExitDelegate(), WatchUi.SLIDE_UP);
             }
             
         } catch (exception) {
@@ -255,8 +273,8 @@ class MainDelegate extends WatchUi.BehaviorDelegate {
     
     // Override onSelect to prevent conflicts
     function onSelect() {
-        System.println("MainDelegate: Select pressed - redirecting to ENTER");
-        return onEnterButton();
+        System.println("MainDelegate: Select pressed - treating as START button");
+        return onStartPress();  // FIXED: START button should control session
     }
 }
 
@@ -314,11 +332,47 @@ class ExitConfirmationDelegate extends WatchUi.ConfirmationDelegate {
     
     function onResponse(response) {
         if (response == WatchUi.CONFIRM_YES) {
+            // User confirmed - stop session and exit
+            try {
+                var app = Application.getApp();
+                if (app != null) {
+                    var sessionManager = app.getSessionManager();
+                    if (sessionManager != null && sessionManager.isActive()) {
+                        // Stop and save session before exit
+                        sessionManager.stopAndSaveSession();
+                        System.println("ExitConfirmationDelegate: Session stopped before exit");
+                    }
+                }
+            } catch (exception) {
+                System.println("ExitConfirmationDelegate: Error stopping session: " + exception.getErrorMessage());
+            }
+            
+            // Exit application
             System.exit();
         } else {
-            WatchUi.popView(WatchUi.SLIDE_DOWN);
+            // User cancelled - just close dialog
+            WatchUi.popView(WatchUi.SLIDE_UP);
         }
-        return true; // Add missing return
+        return true;
+    }
+}
+
+class SimpleExitDelegate extends WatchUi.ConfirmationDelegate {
+    
+    function initialize() {
+        ConfirmationDelegate.initialize();
+    }
+    
+    function onResponse(response) {
+        if (response == WatchUi.CONFIRM_YES) {
+            // Simple exit without stopping session
+            System.println("SimpleExitDelegate: Exiting application");
+            System.exit();
+        } else {
+            // User cancelled - just close dialog
+            WatchUi.popView(WatchUi.SLIDE_UP);
+        }
+        return true;
     }
 }
 
@@ -364,4 +418,13 @@ class MainMenuDelegate extends WatchUi.Menu2InputDelegate {
         var confirmation = new WatchUi.Confirmation("AGV Tracker v3.0.0\nby Vít Kotačka");
         WatchUi.pushView(confirmation, new WatchUi.ConfirmationDelegate(), WatchUi.SLIDE_UP);
     }
+
+    function logDevice(message) {
+        System.println("AGV-DEVICE: " + message);
+    }
+
+    function logError(context, exception) {
+        System.println("AGV-ERROR [" + context + "]: " + exception.getErrorMessage());
+    }
+
 }

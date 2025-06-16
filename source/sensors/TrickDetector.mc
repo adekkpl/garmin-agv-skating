@@ -446,21 +446,30 @@ class TrickDetector {
         }
     }
 
-    // Set callback for trick detection
-    function setTrickDetectedCallback(callback) {
-        trickDetectedCallback = callback;
+    function startDetection() as Void {
+        currentState = STATE_RIDING;
+        System.println("TrickDetector: Detection started");
     }
 
+    function stopDetection() as Void {
+        currentState = STATE_RIDING;
+        System.println("TrickDetector: Detection stopped");
+    }
+
+    function setTrickDetectedCallback(callback as Lang.Method) as Void {
+        trickDetectedCallback = callback;
+        System.println("TrickDetector: Callback set");
+    }
+
+
     // Get detection statistics
-    function getDetectionStats() {
+    function getDetectionStats() as Lang.Dictionary {
         return {
             "totalTricks" => totalTricksDetected,
             "totalGrinds" => totalGrindsDetected,
             "totalJumps" => totalJumpsDetected,
-            "longestGrind" => longestGrindDuration,
-            "currentState" => currentState,
-            "isCalibrated" => isCalibrated
-        };
+            "longestGrind" => longestGrindDuration
+        } as Lang.Dictionary;
     }
 
     // Adjust detection sensitivity
@@ -488,7 +497,7 @@ class TrickDetector {
     }
 
     // Get calibration status
-    function isCalibrationComplete() {
+    function isCalibrationComplete() as Lang.Boolean {
         return isCalibrated;
     }
 
@@ -534,24 +543,46 @@ class TrickDetector {
         return lastUpdateTime - lastTrickTime;
     }
 
-    // Cleanup resources
-    function cleanup() {
-        try {
-            // Reset all state
-            currentState = STATE_RIDING;
-            resetTrickState();
-            resetStats();
-            
-            // Clear buffers
-            for (var i = 0; i < BUFFER_SIZE; i++) {
-                accelBuffer[i] = 9.8;
-                altitudeBuffer[i] = 0.0;
-                heightChangeBuffer[i] = 0.0;
+    function detectTrick(trickType as Lang.String, trickData as Lang.Dictionary) as Void {
+        totalTricksDetected++;
+        System.println("TrickDetector: " + trickType + " detected!");
+        
+        if (trickDetectedCallback != null) {
+            try {
+                trickDetectedCallback.invoke(trickType, trickData);
+            } catch (exception) {
+                System.println("TrickDetector: Callback error: " + exception.getErrorMessage());
             }
-            
-            System.println("TrickDetector: Cleanup completed");
-        } catch (exception) {
-            System.println("TrickDetector: Error during cleanup: " + exception.getErrorMessage());
         }
+    }
+
+    function updateSensorData(accelData as Lang.Dictionary, gyroData as Lang.Dictionary) as Void {
+        if (accelData != null) {
+            try {
+                // Process accelerometer data for trick detection
+                var x = accelData.get("x") as Lang.Float;
+                var y = accelData.get("y") as Lang.Float;  
+                var z = accelData.get("z") as Lang.Float;
+                
+                var magnitude = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
+                
+                // Simple trick detection logic
+                if (magnitude > TAKEOFF_ACCEL_THRESHOLD + 9.8) {  // 9.8 is gravity
+                    // FIXED: Proper dictionary syntax
+                    var trickData = {
+                        "magnitude" => magnitude
+                    } as Lang.Dictionary;
+                    detectTrick("jump", trickData);
+                }
+            } catch (exception) {
+                System.println("TrickDetector: Error processing sensor data: " + exception.getErrorMessage());
+            }
+        }
+    }
+
+    // Cleanup resources
+    function cleanup() as Void {
+        stopDetection();
+        System.println("TrickDetector: Cleanup completed");
     }
 }

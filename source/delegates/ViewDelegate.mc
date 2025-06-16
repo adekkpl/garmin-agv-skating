@@ -20,38 +20,108 @@ class ViewDelegate extends WatchUi.BehaviorDelegate {
     // Handle key events
     function onKey(keyEvent) {
         var key = keyEvent.getKey();
-        var currentTime = System.getTimer();
+        System.println("ViewDelegate: Key event = " + key);
         
-        // Debounce rapid button presses
-        if (currentTime - lastButtonPress < BUTTON_DEBOUNCE_TIME) {
-            return true;
-        }
-        lastButtonPress = currentTime;
-        
-        System.println("ViewDelegate: Key pressed = " + key);
-        
+        // FIXED: Przekaż START i BACK do MainDelegate
         switch (key) {
-            case 4:  // START button
+            case 4:  // START button - ZAWSZE przekaż do MainDelegate
             case WatchUi.KEY_START:
-                return onStartButton();
+                System.println("ViewDelegate: START button - delegating to MainDelegate");
+                return delegateToMainDelegate(keyEvent);
+                
+            case 5:  // BACK button - ZAWSZE przekaż do MainDelegate  
+            case WatchUi.KEY_ESC:
+                System.println("ViewDelegate: BACK button - delegating to MainDelegate");
+                return delegateToMainDelegate(keyEvent);
+                
+            // Inne przyciski obsługuj normalnie
             case WatchUi.KEY_ENTER:
-            case 7:  // CENTER button alternatives
+            case 7:
             case 12:
                 return onEnterButton();
-            case 13: // UP button
+            case 13:
             case WatchUi.KEY_UP:
                 return onUpButton();
-            case 8:  // DOWN button
+            case 8:
             case WatchUi.KEY_DOWN:
                 return onDownButton();
-            case 5:  // BACK button
-            case WatchUi.KEY_ESC:
-                return onBackButton();
             default:
                 return false;
         }
     }
     
+    function delegateToMainDelegate(keyEvent) {
+        try {
+            // USUŃ linię z getMainDelegate() - nie istnieje
+            // Użyj bezpośrednio fallback funkcji
+            
+            var key = keyEvent.getKey();
+            System.println("ViewDelegate: Delegating key " + key + " to fallback handlers");
+            
+            if (key == 4 || key == WatchUi.KEY_START) {
+                return handleStartButton();
+            } else if (key == 5 || key == WatchUi.KEY_ESC) {
+                return handleBackButton();
+            }
+            
+        } catch (exception) {
+            System.println("ViewDelegate: Error delegating key: " + exception.getErrorMessage());
+        }
+        
+        return false;
+    }
+
+
+    function handleStartButton() {
+        System.println("ViewDelegate: Handling START button for session control");
+        
+        try {
+            var app = Application.getApp();
+            if (app != null) {
+                var sessionManager = app.getSessionManager();
+                if (sessionManager != null) {
+                    if (sessionManager.isActive()) {
+                        app.stopAndSaveSession();
+                        System.println("ViewDelegate: Session stopped by user");
+                    } else {
+                        app.startSession();
+                        System.println("ViewDelegate: Session started by user");
+                    }
+                    return true;
+                }
+            }
+        } catch (exception) {
+            System.println("ViewDelegate: Error handling START: " + exception.getErrorMessage());
+        }
+        
+        return false;
+    }
+
+    function handleBackButton() {
+        System.println("ViewDelegate: Handling BACK button - checking session");
+        
+        try {
+            var app = Application.getApp();
+            if (app != null) {
+                var sessionManager = app.getSessionManager();
+                if (sessionManager != null && sessionManager.isActive()) {
+                    // Session active - show confirmation
+                    var confirmation = new WatchUi.Confirmation("Stop session and exit?");
+                    WatchUi.pushView(confirmation, new ExitConfirmationDelegate(), WatchUi.SLIDE_UP);
+                    return true;
+                } else {
+                    // No active session - allow exit
+                    System.println("ViewDelegate: No active session - allowing exit");
+                    return false;  // This allows app to exit
+                }
+            }
+        } catch (exception) {
+            System.println("ViewDelegate: Error handling BACK: " + exception.getErrorMessage());
+        }
+        
+        return false;
+    }
+
     // START button - same logic as old version
     function onStartButton() {
         System.println("ViewDelegate: START pressed - controlling session");
@@ -82,6 +152,40 @@ class ViewDelegate extends WatchUi.BehaviorDelegate {
         
         return true;
     }
+
+    function onStartPress() {
+        System.println("ViewDelegate: START pressed - controlling session");
+        
+        // Simple debounce protection
+        var currentTime = System.getTimer();
+        if (currentTime - lastButtonPress < BUTTON_DEBOUNCE_TIME) {
+            System.println("ViewDelegate: Ignoring rapid START press");
+            return true;
+        }
+        lastButtonPress = currentTime;
+        
+        // FIXED: Use SessionManager instead of SessionStats
+        try {
+            if (app != null) {
+                var sessionManager = app.getSessionManager();
+                if (sessionManager != null) {
+                    if (sessionManager.isActive()) {
+                        // Stop current session
+                        app.stopAndSaveSession();
+                        System.println("ViewDelegate: Session stopped by user");
+                    } else {
+                        // Start new session
+                        app.startSession();
+                        System.println("ViewDelegate: Session started by user");
+                    }
+                }
+            }
+        } catch (exception) {
+            System.println("ViewDelegate: Error controlling session: " + exception.getErrorMessage());
+        }
+        
+        return true;
+    }    
     
     // ENTER button - next view
     function onEnterButton() {

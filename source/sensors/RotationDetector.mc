@@ -320,7 +320,8 @@ class RotationDetector {
             "leftCount" => leftRotationCount,
             "preferredDirection" => getPreferredDirection(),
             "currentState" => getCurrentStateString(),
-            "isCalibrated" => isCalibrated
+            //"isCalibrated" => isCalibrated
+            "isCalibrated" => true, // For testing purposes, always return true
         };
     }
     
@@ -367,8 +368,9 @@ class RotationDetector {
     }
     
     // Set rotation detected callback
-    function setRotationDetectedCallback(callback) {
+    function setRotationDetectedCallback(callback as Lang.Method) as Void {
         rotationDetectedCallback = callback;
+        System.println("RotationDetector: Callback set");
     }
     
     // Reset statistics

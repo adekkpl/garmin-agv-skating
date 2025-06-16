@@ -61,25 +61,34 @@ class SensorManager {
         try {
             System.println("SensorManager: Initializing sensors...");
             
-            // Temporarily disable sensor initialization for compilation
-            heartRateEnabled = false;
-            accelEnabled = false;
-            barometerEnabled = false;
+            // Enable actual sensors instead of disabling them
+            heartRateEnabled = true;
+            accelEnabled = true;
+            barometerEnabled = true;
             gyroEnabled = false;
             
-            System.println("SensorManager: Sensors temporarily disabled for compatibility");
+            // Enable heart rate sensor - UPROSZCZONA WERSJA BEZ TYPE CASTING
+            try {
+                Sensor.setEnabledSensors([Sensor.SENSOR_HEARTRATE]);
+                Sensor.enableSensorEvents(method(:onSensorEvent));
+                System.println("SensorManager: Heart rate sensor enabled");
+            } catch (sensorException) {
+                System.println("SensorManager: Heart rate sensor failed: " + sensorException.getErrorMessage());
+                heartRateEnabled = false;
+            }
             
-            // Start update timer with simulated data
+            // Enable actual update timer
             startUpdateTimer();
             
             sensorsInitialized = true;
-            System.println("SensorManager: Sensor initialization complete (simulated mode)");
+            System.println("SensorManager: Sensor initialization complete");
             
         } catch (exception) {
             System.println("SensorManager: Error initializing sensors: " + exception.getErrorMessage());
             sensorsInitialized = false;
         }
     }
+
     
     // Start periodic sensor updates
     function startUpdateTimer() {
@@ -87,10 +96,14 @@ class SensorManager {
             updateTimer.stop();
         }
         
-        // Temporarily comment out timer to fix compilation
-        // updateTimer = new Timer.Timer();
-        // updateTimer.start(method(:updateSensorData), UPDATE_INTERVAL, true);
-        System.println("SensorManager: Update timer temporarily disabled");
+        try {
+            // UPROSZCZONA WERSJA BEZ TYPE CASTING
+            updateTimer = new Timer.Timer();
+            updateTimer.start(method(:updateSensorData), UPDATE_INTERVAL, true);
+            System.println("SensorManager: Update timer started");
+        } catch (exception) {
+            System.println("SensorManager: Failed to start update timer: " + exception.getErrorMessage());
+        }
     }
     
     // Stop sensor updates
@@ -103,66 +116,54 @@ class SensorManager {
     }
     
     // Sensor event callback
-    function onSensorEvent(sensorInfo) {
+    function onSensorEvent(info as Sensor.Info) as Void {
         try {
-            if (sensorInfo == null) {
+            if (info == null) {
                 return;
             }
             
             // Update heart rate
-            if (sensorInfo.heartRate != null) {
-                var newHR = sensorInfo.heartRate;
+            if (info.heartRate != null) {
+                var newHR = info.heartRate;
                 if (newHR > 0) {
                     currentHeartRate = newHR;
                     updateHeartRateStats(newHR);
+                    System.println("SensorManager: HR = " + newHR + " bpm");
                 }
             }
             
             // Update accelerometer
-            if (sensorInfo.accel != null && sensorInfo.accel.size() >= 3) {
-                // FIXED: Cast accel to proper array type
-                var accelArray = sensorInfo.accel as Lang.Array<Lang.Float>;
+            if (info.accel != null && info.accel.size() >= 3) {
+                var accelArray = info.accel;
                 
-                currentAccelData.put("x", accelArray[0]);
-                currentAccelData.put("y", accelArray[1]);
-                currentAccelData.put("z", accelArray[2]);
+                currentAccelData.put("x", accelArray[0].toFloat());
+                currentAccelData.put("y", accelArray[1].toFloat());
+                currentAccelData.put("z", accelArray[2].toFloat());
+                
+                System.println("SensorManager: Accel = " + accelArray[0] + ", " + accelArray[1] + ", " + accelArray[2]);
             }
             
-            // Estimate gyroscope data from accelerometer changes
-            // This is a simplified approach since real gyroscope might not be available
-            if (sensorInfo.accel != null && sensorInfo.accel.size() >= 3) {
-                // FIXED: Cast accel to proper array type
-                var accelArray = sensorInfo.accel as Lang.Array<Lang.Float>;
-                
-                // Calculate angular velocity estimation from acceleration changes
-                var deltaX = accelArray[0] - currentAccelData.get("x");
-                var deltaY = accelArray[1] - currentAccelData.get("y");
-                var deltaZ = accelArray[2] - currentAccelData.get("z");
-                
-                // Simple estimation (not perfect, but better than nothing)
-                currentGyroData.put("x", deltaX * 10); // Scale factor
-                currentGyroData.put("y", deltaY * 10);
-                currentGyroData.put("z", deltaZ * 10);
+            // Update barometer/pressure if available
+            if (info.pressure != null) {
+                var pressure = info.pressure;
+                currentBarometricData.put("pressure", pressure);
+                System.println("SensorManager: Pressure = " + pressure + " Pa");
             }
             
-            // Update barometer/pressure
-            if (sensorInfo.pressure != null) {
-                currentBarometricData.put("pressure", sensorInfo.pressure);
-                
-                // Calculate approximate altitude from pressure
-                var altitude = pressureToAltitude(sensorInfo.pressure);
+            // Update altitude if available
+            if (info.altitude != null) {
+                var altitude = info.altitude;
                 currentBarometricData.put("altitude", altitude);
+                System.println("SensorManager: Altitude = " + altitude + " m");
             }
-            
-            lastUpdateTime = System.getTimer();
             
         } catch (exception) {
-            System.println("SensorManager: Error in sensor event: " + exception.getErrorMessage());
+            System.println("SensorManager: Sensor callback error: " + exception.getErrorMessage());
         }
     }
     
     // Periodic sensor data update
-    function updateSensorData() {
+/*     function updateSensorData() {
         try {
             var timestamp = System.getTimer();
             
@@ -197,8 +198,30 @@ class SensorManager {
         } catch (exception) {
             System.println("SensorManager: Error in updateSensorData: " + exception.getErrorMessage());
         }
+    } */
+    function updateSensorData() as Void {
+        try {
+            lastUpdateTime = System.getTimer();
+            
+            // Get current sensor info
+            var sensorInfo = Sensor.getInfo();
+            if (sensorInfo != null) {
+                onSensorEvent(sensorInfo);
+            }
+            
+            // Notify trick detector if available
+            if (trickDetector != null && trickDetector has :updateSensorData) {
+                trickDetector.updateSensorData(currentAccelData, currentGyroData);
+            }
+            
+            System.println("SensorManager: Sensor data updated - HR: " + currentHeartRate);
+            
+        } catch (exception) {
+            System.println("SensorManager: Error updating sensor data: " + exception.getErrorMessage());
+        }
     }
-    
+
+
     // Update heart rate statistics
     function updateHeartRateStats(heartRate) {
         // Update max heart rate
