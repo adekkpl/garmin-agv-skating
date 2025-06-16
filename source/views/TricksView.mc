@@ -201,7 +201,7 @@ class TricksView extends WatchUi.View {
         
         try {
             // Pulsing animation
-            var alpha = Math.sin(animationTimer * 0.5) * 0.5 + 0.5;
+            var alpha = MathUtils.safeSin(animationTimer * 0.5) * 0.5 + 0.5;
             var animColor = Graphics.COLOR_YELLOW;
             
             if (lastDetectedTrick.equals("grind")) {

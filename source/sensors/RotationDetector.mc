@@ -53,10 +53,11 @@ class RotationDetector {
     function initialize() {
         currentState = STATE_STABLE;
         
-        // Initialize gyro buffer
+        // FIXED: Initialize gyro buffer with explicit type
         gyroBuffer = new Lang.Array<Lang.Float>[BUFFER_SIZE];
+        var buffer = gyroBuffer as Lang.Array<Lang.Float>;
         for (var i = 0; i < BUFFER_SIZE; i++) {
-            gyroBuffer[i] = 0.0;
+            buffer[i] = 0.0;
         }
         
         rotationStartTime = null;
@@ -150,7 +151,8 @@ class RotationDetector {
     
     // Update gyroscope buffer for smoothing
     function updateGyroBuffer(gyroRate) {
-        gyroBuffer[bufferIndex] = gyroRate;
+        var buffer = gyroBuffer as Lang.Array<Lang.Float>;
+        buffer[bufferIndex] = gyroRate;
         bufferIndex = (bufferIndex + 1) % BUFFER_SIZE;
     }
     
@@ -159,8 +161,9 @@ class RotationDetector {
         var sum = 0.0;
         var count = 0;
         
+        var buffer = gyroBuffer as Lang.Array<Lang.Float>;
         for (var i = 0; i < BUFFER_SIZE; i++) {
-            sum += gyroBuffer[i];
+            sum += buffer[i];
             count++;
         }
         
@@ -226,8 +229,6 @@ class RotationDetector {
     
     // Check rotation completion
     function checkRotationCompletion(gyroRate, timestamp) {
-        var stableTime = 200; // ms of stable reading to confirm completion
-        
         if (abs(gyroRate) < ROTATION_END_THRESHOLD) {  // Use Utils.mc function
             // Still stable - complete the rotation
             completeRotation(timestamp);
@@ -266,15 +267,6 @@ class RotationDetector {
         
         totalRotations++;
         lastRotationTime = timestamp;
-        
-        // Create rotation data
-        var rotationData = {
-            "direction" => rotationDirection,
-            "angle" => currentRotation,
-            "amount" => rotationAmount,
-            "duration" => duration,
-            "timestamp" => timestamp
-        };
         
         // Trigger callback
         if (rotationDetectedCallback != null) {
@@ -419,8 +411,9 @@ class RotationDetector {
             resetRotationState();
             
             // Clear buffer
+            var buffer = gyroBuffer as Lang.Array<Lang.Float>;
             for (var i = 0; i < BUFFER_SIZE; i++) {
-                gyroBuffer[i] = 0.0;
+                buffer[i] = 0.0;
             }
             
             System.println("RotationDetector: Cleanup completed");

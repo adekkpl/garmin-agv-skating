@@ -49,8 +49,42 @@ function radiansToDegrees(radians) {
 
 
 
+class MathUtils {
+    
+    // Safe sine calculation that returns Float
+    static function safeSin(angleRad) {
+        try {
+            return Math.sin(angleRad).toFloat();
+        } catch (exception) {
+            return 0.0;
+        }
+    }
+    
+    // Calculate alpha for animations (0-255 range)
+    static function calculateAlpha(time, frequency) {
+        try {
+            var sinValue = safeSin(time * frequency);
+            var alpha = (sinValue * 127.0 + 128.0).toNumber();
+            
+            // Clamp to valid alpha range
+            if (alpha < 0) { alpha = 0; }
+            if (alpha > 255) { alpha = 255; }
+            
+            return alpha;
+        } catch (exception) {
+            return 128; // Default alpha
+        }
+    }
+    
+    // Other math utilities...
+    static function clamp(value, min, max) {
+        if (value < min) { return min; }
+        if (value > max) { return max; }
+        return value;
+    }
+}
 
-// SYSTEM LOGOWANIA DLA ZEGARKA
+// Simple logging system for device events for eventually debugging if needed. Left code for eventually use if some problem occurs.
 class DeviceLogger {
     
     const MAX_LOG_ENTRIES = 100;

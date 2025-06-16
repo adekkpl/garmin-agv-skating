@@ -157,46 +157,55 @@ class SettingsView extends WatchUi.View {
         // App version
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(centerX, yPos, Graphics.FONT_TINY, 
-                   "AGV Tracker v3.0.0", Graphics.TEXT_JUSTIFY_CENTER);
+                "AGV Tracker v3.0.0", Graphics.TEXT_JUSTIFY_CENTER);
         yPos += lineHeight;
         
         // Author
         dc.drawText(centerX, yPos, Graphics.FONT_TINY, 
-                   "by Vít Kotačka", Graphics.TEXT_JUSTIFY_CENTER);
+                "by Vít Kotačka", Graphics.TEXT_JUSTIFY_CENTER);
         yPos += lineHeight;
         
-        // Device info
+        // FIXED: Device info with proper null check
         var deviceSettings = System.getDeviceSettings();
-        var deviceName = deviceSettings.partNumber;
-        if (deviceName == null) {
-            deviceName = "Unknown Device";
+        var deviceName = "Unknown Device"; // Default value
+        
+        try {
+            if (deviceSettings != null && deviceSettings.partNumber != null) {
+                deviceName = deviceSettings.partNumber;
+            }
+        } catch (exception) {
+            // Keep default deviceName if error occurs
+            System.println("Error getting device name: " + exception.getErrorMessage());
         }
         
         dc.drawText(centerX, yPos, Graphics.FONT_TINY, 
-                   deviceName, Graphics.TEXT_JUSTIFY_CENTER);
+                deviceName, Graphics.TEXT_JUSTIFY_CENTER);
         yPos += lineHeight;
         
         // Memory info (if available)
         try {
             var stats = System.getSystemStats();
-            if (stats != null) {
+            if (stats != null && stats.usedMemory != null && stats.totalMemory != null) {
                 var memoryUsed = stats.usedMemory;
                 var totalMemory = stats.totalMemory;
-                var memoryPercent = (memoryUsed * 100 / totalMemory).toNumber();
                 
-                dc.drawText(centerX, yPos, Graphics.FONT_TINY, 
-                           "Memory: " + memoryPercent + "%", Graphics.TEXT_JUSTIFY_CENTER);
+                // FIXED: Safe division check
+                if (totalMemory > 0) {
+                    var memoryPercent = (memoryUsed * 100 / totalMemory).toNumber();
+                    dc.drawText(centerX, yPos, Graphics.FONT_TINY, 
+                            "Memory: " + memoryPercent + "%", Graphics.TEXT_JUSTIFY_CENTER);
+                }
             }
         } catch (exception) {
-            // Memory info not available
+            // Memory info not available - silently ignore
         }
         
         // Instructions at bottom
         dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(centerX, screenHeight - 30, Graphics.FONT_XTINY, 
-                   "Use UP/DOWN to switch views", Graphics.TEXT_JUSTIFY_CENTER);
+                "Use UP/DOWN to switch views", Graphics.TEXT_JUSTIFY_CENTER);
         dc.drawText(centerX, screenHeight - 15, Graphics.FONT_XTINY, 
-                   "BACK to return to main", Graphics.TEXT_JUSTIFY_CENTER);
+                "BACK to return to main", Graphics.TEXT_JUSTIFY_CENTER);
     }
     
     // Draw error message

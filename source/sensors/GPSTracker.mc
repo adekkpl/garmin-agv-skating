@@ -16,7 +16,7 @@ class GPSTracker {
     var totalDistance = 0.0;
     
     // Position history for accuracy
-    var positionHistory;
+    var positionHistory as Lang.Array<Position.Location or Null>;
     const HISTORY_SIZE = 10;
     var historyIndex = 0;
     
@@ -214,7 +214,8 @@ class GPSTracker {
     
     // Add position to history for smoothing
     function addToHistory(position) {
-        positionHistory[historyIndex] = position;
+        var history = positionHistory as Lang.Array<Position.Location or Null>;
+        history[historyIndex] = position;
         historyIndex = (historyIndex + 1) % HISTORY_SIZE;
     }
     
@@ -225,10 +226,14 @@ class GPSTracker {
         }
         
         try {
-            var lat1 = pos1.toDegrees()[0] * Math.PI / 180.0;
-            var lon1 = pos1.toDegrees()[1] * Math.PI / 180.0;
-            var lat2 = pos2.toDegrees()[0] * Math.PI / 180.0;
-            var lon2 = pos2.toDegrees()[1] * Math.PI / 180.0;
+            // FIXED: Cast toDegrees() results to proper array type
+            var coords1 = pos1.toDegrees() as Lang.Array<Lang.Double>;
+            var coords2 = pos2.toDegrees() as Lang.Array<Lang.Double>;
+            
+            var lat1 = coords1[0] * Math.PI / 180.0;
+            var lon1 = coords1[1] * Math.PI / 180.0;
+            var lat2 = coords2[0] * Math.PI / 180.0;
+            var lon2 = coords2[1] * Math.PI / 180.0;
             
             var dlat = lat2 - lat1;
             var dlon = lon2 - lon1;
@@ -254,9 +259,12 @@ class GPSTracker {
         var latSum = 0.0;
         var lonSum = 0.0;
         
+        var history = positionHistory as Lang.Array<Position.Location or Null>;
+        
         for (var i = 0; i < HISTORY_SIZE; i++) {
-            if (positionHistory[i] != null) {
-                var coords = positionHistory[i].toDegrees();
+            if (history[i] != null) {
+                // FIXED: Cast toDegrees() result to proper array type
+                var coords = history[i].toDegrees() as Lang.Array<Lang.Double>;
                 latSum += coords[0];
                 lonSum += coords[1];
                 validPositions++;
@@ -264,8 +272,10 @@ class GPSTracker {
         }
         
         if (validPositions > 0) {
-            var avgLat = latSum / validPositions;
-            var avgLon = lonSum / validPositions;
+            // REMOVED: unused variables avgLat and avgLon
+            // var avgLat = latSum / validPositions;
+            // var avgLon = lonSum / validPositions;
+            
             // W Garmin Connect IQ nie możemy tworzyć nowych objektów Position
             // Zwrócimy ostatnią znaną pozycję jako najlepsze przybliżenie
             return lastPosition;

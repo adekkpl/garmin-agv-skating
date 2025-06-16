@@ -255,6 +255,8 @@ class RotationView extends WatchUi.View {
     }
     
     // Draw rotation detection animation
+// RotationView.mc - FIXED ANIMATION FUNCTION
+
     function drawRotationAnimation(dc) {
         if (lastRotationDirection.length() == 0) {
             return;
@@ -262,7 +264,7 @@ class RotationView extends WatchUi.View {
         
         try {
             var animColor = lastRotationDirection.equals("right") ? 
-                           Graphics.COLOR_GREEN : Graphics.COLOR_BLUE;
+                        Graphics.COLOR_GREEN : Graphics.COLOR_BLUE;
             
             // Spinning animation
             var angle = animationTimer * 15; // degrees per frame
@@ -282,15 +284,20 @@ class RotationView extends WatchUi.View {
             
             // Simple animated text
             var rotationText = lastRotationDirection.toUpper() + "\n" + 
-                              (lastRotationAngle / 360.0).format("%.1f") + " turns";
+                            (lastRotationAngle / 360.0).format("%.1f") + " turns";
             
             dc.setColor(animColor, Graphics.COLOR_TRANSPARENT);
             dc.drawText(centerX, centerY - 40, Graphics.FONT_SMALL, 
-                       rotationText, Graphics.TEXT_JUSTIFY_CENTER);
+                    rotationText, Graphics.TEXT_JUSTIFY_CENTER);
             
-            // Spinning circle indicator
-            var spinX = centerX + Math.sin(currentAngle * Math.PI / 180) * 20;
-            var spinY = centerY + Math.cos(currentAngle * Math.PI / 180) * 20;
+            // FIXED: Spinning circle indicator with safe math
+            var angleRad = currentAngle * Math.PI / 180.0;
+            var sinValue = Math.sin(angleRad).toFloat();
+            var cosValue = Math.cos(angleRad).toFloat();
+            
+            var spinX = (centerX + sinValue * 20.0).toNumber();
+            var spinY = (centerY + cosValue * 20.0).toNumber();
+            
             dc.fillCircle(spinX, spinY, 5);
             
         } catch (exception) {

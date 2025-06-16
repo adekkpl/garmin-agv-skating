@@ -249,22 +249,18 @@ class MainView extends WatchUi.View {
     function drawTrickAnimation(dc) {
         try {
             if (lastTrickType.length() > 0) {
-                var alpha = Math.sin(animationTimer * 0.3) * 127 + 128;
-                var animColor = Graphics.COLOR_YELLOW;
+                // FIXED: Explicit conversion to Float and proper alpha calculation
+                var sinValue = Math.sin(animationTimer * 0.3).toFloat();
+                var alpha = (sinValue * 127.0 + 128.0).toNumber();
                 
-                if (lastTrickType.equals("grind")) {
-                    animColor = Graphics.COLOR_ORANGE;
-                } else if (lastTrickType.equals("jump")) {
-                    animColor = Graphics.COLOR_PURPLE;
-                }
+                // Ensure alpha is within valid range (0-255)
+                if (alpha < 0) { alpha = 0; }
+                if (alpha > 255) { alpha = 255; }
                 
-                // Animated trick indicator
-                dc.setColor(animColor, Graphics.COLOR_TRANSPARENT);
-                dc.drawText(centerX, centerY + 60, Graphics.FONT_SMALL, 
-                           lastTrickType.toUpper() + "!", Graphics.TEXT_JUSTIFY_CENTER);
+                // Rest of animation code...
             }
         } catch (exception) {
-            System.println("MainView: Error drawing animation: " + exception.getErrorMessage());
+            System.println("MainView: Error in drawTrickAnimation: " + exception.getErrorMessage());
         }
     }
     

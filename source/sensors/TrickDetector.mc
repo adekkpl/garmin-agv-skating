@@ -39,9 +39,9 @@ class TrickDetector {
     var lastUpdateTime;
     
     // Analysis buffers - properly sized
-    var accelBuffer;
-    var altitudeBuffer;
-    var heightChangeBuffer;
+    var accelBuffer as Lang.Array<Lang.Float> = new Lang.Array<Lang.Float>[BUFFER_SIZE];
+    var altitudeBuffer as Lang.Array<Lang.Float> = new Lang.Array<Lang.Float>[BUFFER_SIZE];
+    var heightChangeBuffer as Lang.Array<Lang.Float> = new Lang.Array<Lang.Float>[BUFFER_SIZE];
     var bufferIndex = 0;
     
     // Calibration and filtering

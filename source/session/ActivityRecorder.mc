@@ -39,11 +39,11 @@ class ActivityRecorder {
                 return true;
             }
             
-            // Create new recording session
+            // FIXED: Use Activity.SPORT_* instead of deprecated ActivityRecording.SPORT_*
             session = ActivityRecording.createSession({
                 :name => "Aggressive Skating",
-                :sport => ActivityRecording.SPORT_CYCLING, // Use non-deprecated sport
-                :subSport => ActivityRecording.SUB_SPORT_GENERIC // Use non-deprecated subsport
+                :sport => Activity.SPORT_INLINE_SKATING,    // FIXED: Use proper inline skating sport
+                :subSport => Activity.SUB_SPORT_GENERIC     // FIXED: Use Activity.SUB_SPORT_*
             });
             
             if (session == null) {
@@ -64,7 +64,6 @@ class ActivityRecorder {
             
         } catch (exception) {
             System.println("ActivityRecorder: Error starting recording: " + exception.getErrorMessage());
-            isRecording = false;
             return false;
         }
     }

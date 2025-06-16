@@ -16,7 +16,9 @@ class SensorManager {
     var lastUpdateTime = 0;
     
     // Heart rate tracking
-    var heartRateHistory;
+    //var heartRateHistory;
+    // FIXED: Explicit type declaration
+    var heartRateHistory as Lang.Array<Lang.Number>;    
     var maxHeartRate = 0;
     var avgHeartRate = 0;
     var hrSampleCount = 0;
@@ -118,18 +120,24 @@ class SensorManager {
             
             // Update accelerometer
             if (sensorInfo.accel != null && sensorInfo.accel.size() >= 3) {
-                currentAccelData.put("x", sensorInfo.accel[0]);
-                currentAccelData.put("y", sensorInfo.accel[1]);
-                currentAccelData.put("z", sensorInfo.accel[2]);
+                // FIXED: Cast accel to proper array type
+                var accelArray = sensorInfo.accel as Lang.Array<Lang.Float>;
+                
+                currentAccelData.put("x", accelArray[0]);
+                currentAccelData.put("y", accelArray[1]);
+                currentAccelData.put("z", accelArray[2]);
             }
             
             // Estimate gyroscope data from accelerometer changes
             // This is a simplified approach since real gyroscope might not be available
             if (sensorInfo.accel != null && sensorInfo.accel.size() >= 3) {
+                // FIXED: Cast accel to proper array type
+                var accelArray = sensorInfo.accel as Lang.Array<Lang.Float>;
+                
                 // Calculate angular velocity estimation from acceleration changes
-                var deltaX = sensorInfo.accel[0] - currentAccelData.get("x");
-                var deltaY = sensorInfo.accel[1] - currentAccelData.get("y");
-                var deltaZ = sensorInfo.accel[2] - currentAccelData.get("z");
+                var deltaX = accelArray[0] - currentAccelData.get("x");
+                var deltaY = accelArray[1] - currentAccelData.get("y");
+                var deltaZ = accelArray[2] - currentAccelData.get("z");
                 
                 // Simple estimation (not perfect, but better than nothing)
                 currentGyroData.put("x", deltaX * 10); // Scale factor
@@ -203,13 +211,16 @@ class SensorManager {
         hrSampleCount++;
         avgHeartRate = hrSum / hrSampleCount;
         
+        // FIXED: Cast heartRateHistory to proper array type
+        var hrHistory = heartRateHistory as Lang.Array<Lang.Number>;
+        
         // Add to history (circular buffer)
         for (var i = 8; i >= 0; i--) {
-            heartRateHistory[i + 1] = heartRateHistory[i];
+            hrHistory[i + 1] = hrHistory[i];
         }
-        heartRateHistory[0] = heartRate;
+        hrHistory[0] = heartRate;
     }
-    
+
     // Convert pressure to altitude
     function pressureToAltitude(pressure) {
         var SEA_LEVEL_PRESSURE = 101325.0; // Pa

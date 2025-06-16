@@ -164,10 +164,14 @@ class ProgressView extends WatchUi.View {
         if (achievements != null && achievements.size() > 0) {
             var xPos = 30;
             var spacing = (screenWidth - 60) / 4;
-            var maxCount = achievements.size() < 4 ? achievements.size() : 4;
+            
+            // FIXED: Cast achievements to proper array type
+            var achievementsArray = achievements as Lang.Array<Lang.Dictionary>;
+            var maxCount = achievementsArray.size() < 4 ? achievementsArray.size() : 4;
             
             for (var i = 0; i < maxCount; i++) {
-                var achievement = achievements[i] as Lang.Dictionary;
+                // FIXED: Direct access to typed array
+                var achievement = achievementsArray[i];
                 var unlocked = achievement.get("unlocked") as Lang.Boolean;
                 var symbol = achievement.get("symbol") as Lang.String;
                 var color = unlocked ? Graphics.COLOR_YELLOW : Graphics.COLOR_DK_GRAY;
@@ -178,7 +182,7 @@ class ProgressView extends WatchUi.View {
                 // Achievement symbol
                 dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_TRANSPARENT);
                 dc.drawText(xPos + i * spacing, yPos - 5, Graphics.FONT_XTINY, 
-                           symbol, Graphics.TEXT_JUSTIFY_CENTER);
+                        symbol, Graphics.TEXT_JUSTIFY_CENTER);
             }
         }
     }
