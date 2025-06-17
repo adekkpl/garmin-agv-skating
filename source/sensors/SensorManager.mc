@@ -41,10 +41,11 @@ class SensorManager {
 
     // State change callback
     var stateChangeCallback;
+    var sessionStats;
     
     // Update timer
     var updateTimer;
-    const UPDATE_INTERVAL = 100; // 100ms = 10Hz
+    const UPDATE_INTERVAL = 1000; // 1000ms = 1Hz (zamiast 100ms = 10Hz)
     
     function initialize() {
         currentAccelData = {"x" => 0.0, "y" => 0.0, "z" => 9.8};
@@ -68,11 +69,25 @@ class SensorManager {
             heartRateEnabled = true;
             accelEnabled = true;
             barometerEnabled = true;
-            gyroEnabled = false;
+            gyroEnabled = true;
+
+            // Create array of sensors to enable
+            var sensorsToEnable = [];
             
             // Enable heart rate sensor - UPROSZCZONA WERSJA BEZ TYPE CASTING
             try {
                 Sensor.setEnabledSensors([Sensor.SENSOR_HEARTRATE]);
+
+                // Dodaj akcelerometr jeśli dostępny
+                var sensorInfo = Sensor.getInfo();
+                if (sensorInfo has :accel) {
+                    accelEnabled = true;
+                    // Note: Accelerometer is typically always enabled on Garmin devices
+                    // No need to explicitly add it to setEnabledSensors for basic accel data
+                }
+
+                // Enable the sensors we want
+                Sensor.setEnabledSensors(sensorsToEnable);
                 Sensor.enableSensorEvents(method(:onSensorEvent));
                 System.println("SensorManager: Heart rate sensor enabled");
             } catch (sensorException) {
@@ -142,16 +157,34 @@ class SensorManager {
                 currentAccelData.put("x", accelArray[0].toFloat());
                 currentAccelData.put("y", accelArray[1].toFloat());
                 currentAccelData.put("z", accelArray[2].toFloat());
+
+                // Wykryj skok (proste - gdy Z > 12m/s²)
+                var totalAccel = Math.sqrt(accelArray[0]*accelArray[0] + 
+                                        accelArray[1]*accelArray[1] + 
+                                        accelArray[2]*accelArray[2]);
+                
+                // Skok wykryty!
+                if (totalAccel > 12.0) { 
+                    System.println("SensorManager: JUMP detected! Accel = " + totalAccel.format("%.1f"));
+                    notifyJumpDetected(totalAccel);
+                }
+
+                // ZMNIEJSZ LOGOWANIE - tylko co 10 czytanie
+                if (System.getTimer() % 10000 < 100) { // Co 10 sekund
+                    System.println("SensorManager: Accel = " + accelArray[0].format("%.1f") + 
+                                ", " + accelArray[1].format("%.1f") + 
+                                ", " + accelArray[2].format("%.1f"));
+                }
                 
                 System.println("SensorManager: Accel = " + accelArray[0] + ", " + accelArray[1] + ", " + accelArray[2]);
             }
             
             // Update barometer/pressure if available
-            if (info.pressure != null) {
+            /* if (info.pressure != null) {
                 var pressure = info.pressure;
                 currentBarometricData.put("pressure", pressure);
                 System.println("SensorManager: Pressure = " + pressure + " Pa");
-            }
+            } */
             
             // Update altitude if available
             if (info.altitude != null) {
@@ -159,6 +192,8 @@ class SensorManager {
                 currentBarometricData.put("altitude", altitude);
                 System.println("SensorManager: Altitude = " + altitude + " m");
             }
+
+            lastUpdateTime = System.getTimer();
             
         } catch (exception) {
             System.println("SensorManager: Sensor callback error: " + exception.getErrorMessage());
@@ -295,7 +330,9 @@ class SensorManager {
             "gyroscope" => currentGyroData,
             "pressure" => currentBarometricData.get("pressure"),
             "altitude" => currentBarometricData.get("altitude"),
-            "lastUpdate" => lastUpdateTime
+            "lastUpdate" => lastUpdateTime,
+            "gps" => getGPSDataFromTracker(),
+            "sessionDistance" => getSessionDistanceFromGPS()
         };
     }
     
@@ -309,6 +346,20 @@ class SensorManager {
     
     function getBarometricData() {
         return currentBarometricData;
+    }
+
+    function getGPSDataFromTracker() {
+        if (gpsTracker != null) {
+            return gpsTracker.getGPSData();
+        }
+        return null;
+    }
+
+    function getSessionDistanceFromGPS() {
+        if (gpsTracker != null) {
+            return gpsTracker.getSessionDistance();
+        }
+        return 0.0;
     }
     
     // Sensor status
@@ -397,12 +448,61 @@ class SensorManager {
         }
     }  
 
+    /* function calculateCalories() {
+        if (currentHeartRate > 0 && avgHeartRate > 0) {
+            // Prosta formuła: (avgHR - 60) * 0.1 kalorii na minutę
+            var sessionTimeMinutes = (System.getTimer() - (sessionStats != null ? sessionStats.sessionStartTime : 0)) / 60000.0;
+            var caloriesPerMinute = (avgHeartRate - 60) * 0.1;
+            return max(0, sessionTimeMinutes * caloriesPerMinute);
+        }
+        return 0;
+    } */
+    function calculateCalories() {
+        if (currentHeartRate > 0 && avgHeartRate > 0) {
+            // Pobierz czas rozpoczęcia sesji z SessionStats
+            var sessionStartTime = 0;
+            if (sessionStats != null) {
+                sessionStartTime = sessionStats.getSessionStartTime();
+            }
+            
+            // Prosta formuła: (avgHR - 60) * 0.1 kalorii na minutę
+            var sessionTimeMinutes = (System.getTimer() - sessionStartTime) / 60000.0;
+            var caloriesPerMinute = (avgHeartRate - 60) * 0.1;
+            
+            // Simple max function since Math.max might not be available
+            var calories = sessionTimeMinutes * caloriesPerMinute;
+            return calories > 0 ? calories : 0;
+        }
+        return 0;
+    }
+
     // Returns a string representing the current sensor state
     function getStateString() {
         return "Sensors initialized: " + sensorsInitialized +
                ", HR: " + currentHeartRate +
                ", Max HR: " + maxHeartRate +
                ", Avg HR: " + avgHeartRate;
+    }
+
+    function notifyJumpDetected(accelMagnitude) {
+        try {
+            // Zwiększ licznik skoków
+            /* if (sessionStats != null && sessionStats has :addJump) {
+                sessionStats.addJump();
+            } */
+            if (sessionStats != null) {
+                sessionStats.addJump();
+            }
+            
+            // Powiadom aplikację
+            var app = Application.getApp();
+            if (app != null && app has :onJumpDetected) {
+                app.onJumpDetected("jump", {"acceleration" => accelMagnitude});
+            }
+            
+        } catch (exception) {
+            System.println("SensorManager: Error notifying jump: " + exception.getErrorMessage());
+        }
     }
     
     // Cleanup

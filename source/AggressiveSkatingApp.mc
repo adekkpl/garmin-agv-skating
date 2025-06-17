@@ -241,7 +241,7 @@ class AggressiveSkatingApp extends Application.AppBase {
                 }
             }
             
-            // Setup session state callbacks
+        // Setup session state callbacks
             if (sessionManager != null) {
                 try {
                     if (sessionManager has :setStateChangeCallback) {
@@ -251,6 +251,12 @@ class AggressiveSkatingApp extends Application.AppBase {
                     System.println("SessionManager callback not available: " + callbackException.getErrorMessage());
                 }
             }
+
+            // Start sensors immediately after setup
+            if (sensorManager != null) {
+                System.println("App: Starting sensors...");
+                sensorManager.startSensors();
+            }            
             
             logDevice("Component connections established (with safety checks)");
             
@@ -350,6 +356,25 @@ class AggressiveSkatingApp extends Application.AppBase {
         }
     }
     
+    function onJumpDetected(jumpType, jumpData) {
+        try {
+            System.println("App: Jump detected - " + jumpType + " magnitude: " + jumpData.get("acceleration"));
+            
+            // Update statistics
+            if (sessionStats != null) {
+                sessionStats.addTrick(jumpType, jumpData); // Użyj istniejącą metodę
+            }
+            
+            // Notify views
+            if (viewManager != null) {
+                viewManager.onTrickDetected(jumpType, jumpData); // Użyj istniejący system
+            }
+            
+        } catch (exception) {
+            logError("onJumpDetected", exception);
+        }
+    }
+
     function onPositionUpdate(position) {
         try {
             // Update session stats with GPS data

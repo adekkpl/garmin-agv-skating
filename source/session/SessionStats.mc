@@ -220,6 +220,43 @@ class SessionStats {
         
         sessionDistance = distance;
     }
+
+
+    // Get session start time for other components
+    function getSessionStartTime() {
+        return sessionStartTime != null ? sessionStartTime : 0;
+    }
+
+    // Add jump to statistics
+    function addJump() {
+        if (sessionActive) {
+            totalJumps++;
+            totalTricks++; // Jump is also a trick
+            System.println("SessionStats: Jump added - Total: " + totalJumps);
+        }
+    }
+
+    // Update best jump height
+    function updateJumpHeight(height) {
+        if (sessionActive && height != null && height > bestJumpHeight) {
+            bestJumpHeight = height;
+            System.println("SessionStats: New best jump height: " + height.format("%.2f") + "m");
+        }
+    }
+
+    // Add grind to statistics
+    function addGrind(duration) {
+        if (sessionActive) {
+            totalGrinds++;
+            totalTricks++; // Grind is also a trick
+            
+            if (duration != null && duration > longestGrind) {
+                longestGrind = duration;
+            }
+            
+            System.println("SessionStats: Grind added - Total: " + totalGrinds);
+        }
+    }
     
     // Add detected trick
     function addTrick(trickType, trickData) {
@@ -247,7 +284,7 @@ class SessionStats {
     }
     
     // Add detected rotation
-    function addRotation(direction, angle) {
+    /* function addRotation(direction, angle) {
         if (!sessionActive) {
             return;
         }
@@ -262,6 +299,22 @@ class SessionStats {
         }
         
         System.println("SessionStats: Added rotation " + direction + " " + rotationAmount.format("%.2f") + " turns");
+    } */
+    // Add rotation to statistics
+    function addRotation(degrees, direction) {
+        if (sessionActive) {
+            totalRotations += abs(degrees);
+            
+            if (direction != null) {
+                if (direction > 0) {
+                    rightRotations += abs(degrees);
+                } else if (direction < 0) {
+                    leftRotations += abs(degrees);
+                }
+            }
+            
+            System.println("SessionStats: Rotation added - " + degrees + " degrees");
+        }
     }
     
     // Update calories estimation
