@@ -73,8 +73,8 @@ class SettingsView extends WatchUi.View {
     
     // Draw settings information
     function drawSettingsInfo(dc) {
-        var yPos = 40;
-        var lineHeight = 25;
+        var yPos = 80;
+        var lineHeight = 40;
         
         // Detection sensitivity
         var sensitivity = 1.0;
@@ -85,9 +85,9 @@ class SettingsView extends WatchUi.View {
         }
         
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(20, yPos, Graphics.FONT_TINY, "Sensitivity:", Graphics.TEXT_JUSTIFY_LEFT);
+        dc.drawText(40, yPos, Graphics.FONT_TINY, "Sensitivity:", Graphics.TEXT_JUSTIFY_LEFT);
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(screenWidth - 20, yPos, Graphics.FONT_TINY, 
+        dc.drawText(screenWidth - 40, yPos, Graphics.FONT_TINY, 
                    sensitivity.format("%.1f"), Graphics.TEXT_JUSTIFY_RIGHT);
         yPos += lineHeight;
         
@@ -151,8 +151,9 @@ class SettingsView extends WatchUi.View {
     
     // Draw app information
     function drawAppInfo(dc) {
-        var yPos = centerY + 20;
-        var lineHeight = 20;
+        //var yPos = centerY + 50;
+        var yPos = 290;
+        var lineHeight = 34;
         
         // App version
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
@@ -162,7 +163,7 @@ class SettingsView extends WatchUi.View {
         
         // Author
         dc.drawText(centerX, yPos, Graphics.FONT_TINY, 
-                "by Vít Kotačka", Graphics.TEXT_JUSTIFY_CENTER);
+                "by Adrian Krawczyk", Graphics.TEXT_JUSTIFY_CENTER);
         yPos += lineHeight;
         
         // FIXED: Device info with proper null check
@@ -201,11 +202,11 @@ class SettingsView extends WatchUi.View {
         }
         
         // Instructions at bottom
-        dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+        /* dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(centerX, screenHeight - 30, Graphics.FONT_XTINY, 
                 "Use UP/DOWN to switch views", Graphics.TEXT_JUSTIFY_CENTER);
         dc.drawText(centerX, screenHeight - 15, Graphics.FONT_XTINY, 
-                "BACK to return to main", Graphics.TEXT_JUSTIFY_CENTER);
+                "BACK to return to main", Graphics.TEXT_JUSTIFY_CENTER); */
     }
     
     // Draw error message

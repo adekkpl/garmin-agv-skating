@@ -122,13 +122,13 @@ class RotationView extends WatchUi.View {
             formattedRotations = rotationDetector.getFormattedRotations();
         }
         
-        var yPos = 65;
-        var lineHeight = 30;
+        var yPos = 90;
+        var lineHeight = 40;
         
         // Right rotations
         var rightRotations = formattedRotations != null ? formattedRotations.get("rightDisplay") : "0.0";
         dc.setColor(Graphics.COLOR_GREEN, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(20, yPos, Graphics.FONT_SMALL, "Right:", Graphics.TEXT_JUSTIFY_LEFT);
+        dc.drawText(30, yPos, Graphics.FONT_SMALL, "Right:", Graphics.TEXT_JUSTIFY_LEFT);
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(screenWidth - 20, yPos, Graphics.FONT_SMALL, 
                    rightRotations, Graphics.TEXT_JUSTIFY_RIGHT);
@@ -184,13 +184,13 @@ class RotationView extends WatchUi.View {
         }
         
         // Draw preference indicator
-        var yPos = centerY + 10;
+        var yPos = centerY + 30;
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
         dc.drawText(centerX, yPos, Graphics.FONT_TINY, 
                    "PREFERENCE:", Graphics.TEXT_JUSTIFY_CENTER);
         
         dc.setColor(directionColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, yPos + 15, Graphics.FONT_SMALL, 
+        dc.drawText(centerX, yPos + 40, Graphics.FONT_SMALL, 
                    preferredDirection, Graphics.TEXT_JUSTIFY_CENTER);
         
         // Draw directional arrows
@@ -246,11 +246,11 @@ class RotationView extends WatchUi.View {
         
         // State display at bottom
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, screenHeight - 40, Graphics.FONT_TINY, 
+        dc.drawText(centerX, screenHeight - 100, Graphics.FONT_TINY, 
                    "STATE:", Graphics.TEXT_JUSTIFY_CENTER);
         
         dc.setColor(stateColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, screenHeight - 20, Graphics.FONT_SMALL, 
+        dc.drawText(centerX, screenHeight - 70, Graphics.FONT_SMALL, 
                    stateText, Graphics.TEXT_JUSTIFY_CENTER);
     }
     

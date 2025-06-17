@@ -66,15 +66,28 @@ class StatsView extends WatchUi.View {
     
     // Draw view header
     function drawHeader(dc) {
-        // Title
-        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, 5, Graphics.FONT_TINY, "STATISTICS", Graphics.TEXT_JUSTIFY_CENTER);
         
         // Session status
         var sessionManager = app.getSessionManager();
-        var statusText = "STOPPED";
-        var statusColor = Graphics.COLOR_RED;
         
+        var statusColor = Graphics.COLOR_WHITE;
+        var stateText = "STOPPED";        
+        if (sessionManager != null) {
+            //timeText = sessionManager.getFormattedDuration();
+            stateText = sessionManager.getStateString();
+            
+            // Color code based on session state
+            if (sessionManager.isActive()) {
+                statusColor = Graphics.COLOR_GREEN;
+            } else if (sessionManager.isPaused()) {
+                statusColor = Graphics.COLOR_YELLOW;
+            } else {
+                statusColor = Graphics.COLOR_WHITE;
+            }
+        }
+        /* 
+        //var statusText = "STOPPED";
+        //var statusColor = Graphics.COLOR_RED;
         if (sessionManager != null) {
             statusText = sessionManager.getStateString();
             
@@ -83,14 +96,18 @@ class StatsView extends WatchUi.View {
             } else if (sessionManager.isPaused()) {
                 statusColor = Graphics.COLOR_YELLOW;
             }
-        }
+        } */
         
+        // Title
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(centerX, 5, Graphics.FONT_TINY, "STATS", Graphics.TEXT_JUSTIFY_CENTER);
+
         // Status indicator
         dc.setColor(statusColor, Graphics.COLOR_TRANSPARENT);
         dc.fillCircle(centerX, 25, 6);
         
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, 35, Graphics.FONT_TINY, statusText, Graphics.TEXT_JUSTIFY_CENTER);
+        dc.drawText(centerX, 35, Graphics.FONT_TINY, stateText, Graphics.TEXT_JUSTIFY_CENTER);
     }
     
     // Draw session statistics
@@ -102,8 +119,8 @@ class StatsView extends WatchUi.View {
             displayData = sessionStats.getDisplayData();
         }
         
-        var yPos = 60;
-        var lineHeight = 25;
+        var yPos = 90;
+        var lineHeight = 40;
         
         // Distance
         var distance = displayData != null ? displayData.get("distance") : 0.0;
@@ -214,7 +231,7 @@ class StatsView extends WatchUi.View {
         
         // Performance rating at bottom
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, screenHeight - 40, Graphics.FONT_TINY, 
+        dc.drawText(centerX, screenHeight - 110, Graphics.FONT_TINY, 
                    "PERFORMANCE:", Graphics.TEXT_JUSTIFY_CENTER);
         
         // Color code the rating
@@ -230,7 +247,7 @@ class StatsView extends WatchUi.View {
         }
         
         dc.setColor(ratingColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, screenHeight - 20, Graphics.FONT_SMALL, 
+        dc.drawText(centerX, screenHeight - 80, Graphics.FONT_SMALL, 
                    performanceRating.toString() + "/100", Graphics.TEXT_JUSTIFY_CENTER);
     }
     

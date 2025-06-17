@@ -114,15 +114,15 @@ class TricksView extends WatchUi.View {
             stats = trickDetector.getDetectionStats();
         }
         
-        var yPos = 70;
-        var lineHeight = 35;
+        var yPos = 90;
+        var lineHeight = 40;
         
         // Total tricks
         var totalTricks = stats != null ? stats.get("totalTricks") : 0;
         dc.setColor(Graphics.COLOR_BLUE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(20, yPos, Graphics.FONT_SMALL, "Total:", Graphics.TEXT_JUSTIFY_LEFT);
+        dc.drawText(47, yPos, Graphics.FONT_SMALL, "Total:", Graphics.TEXT_JUSTIFY_LEFT);
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(screenWidth - 20, yPos, Graphics.FONT_SMALL, 
+        dc.drawText(screenWidth - 40, yPos, Graphics.FONT_SMALL, 
                    totalTricks.toString(), Graphics.TEXT_JUSTIFY_RIGHT);
         yPos += lineHeight;
         
@@ -138,7 +138,7 @@ class TricksView extends WatchUi.View {
         // Jumps
         var totalJumps = stats != null ? stats.get("totalJumps") : 0;
         dc.setColor(Graphics.COLOR_PURPLE, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(20, yPos, Graphics.FONT_SMALL, "Jumps:", Graphics.TEXT_JUSTIFY_LEFT);
+        dc.drawText(16, yPos, Graphics.FONT_SMALL, "Jumps:", Graphics.TEXT_JUSTIFY_LEFT);
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(screenWidth - 20, yPos, Graphics.FONT_SMALL, 
                    totalJumps.toString(), Graphics.TEXT_JUSTIFY_RIGHT);
@@ -185,11 +185,11 @@ class TricksView extends WatchUi.View {
         
         // State display at bottom
         dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, screenHeight - 40, Graphics.FONT_TINY, 
+        dc.drawText(centerX, screenHeight - 110, Graphics.FONT_TINY, 
                    "STATE:", Graphics.TEXT_JUSTIFY_CENTER);
         
         dc.setColor(stateColor, Graphics.COLOR_TRANSPARENT);
-        dc.drawText(centerX, screenHeight - 20, Graphics.FONT_SMALL, 
+        dc.drawText(centerX, screenHeight - 80, Graphics.FONT_SMALL, 
                    stateText, Graphics.TEXT_JUSTIFY_CENTER);
     }
     

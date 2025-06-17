@@ -310,8 +310,11 @@ class SessionManager {
     
     // Get session timing information
     function getSessionDuration() {
+        var result = 0;
+
         if (currentState == STATE_STOPPED) {
-            return activeSessionTime;
+            result = activeSessionTime;
+            //return activeSessionTime;
         } else if (sessionStartTime != null) {
             var now = Time.now();
             var totalTime = now.subtract(sessionStartTime);
@@ -321,20 +324,91 @@ class SessionManager {
                 currentPauseTime = now.subtract(sessionPauseTime).value();
             }
             
-            return totalTime.value() - totalPausedTime - currentPauseTime;
+            result = totalTime.value() - totalPausedTime - currentPauseTime;
         }
-        return 0;
+        // DEBUG: Loguj wartość
+        //System.println("SessionManager: getSessionDuration() = " + result + " (type: " + result.getClass() + ")");
+  
+        return result;
     }
     
-    function getFormattedDuration() {
+    function getFormattedDurationXXX() {
         var duration = getSessionDuration() / 1000; // Convert to seconds
+        //var totalSeconds = duration.toNumber();
+
         var hours = duration / 3600;
         var minutes = (duration % 3600) / 60;
         var seconds = duration % 60;
         
-        return hours.format("%02d") + ":" + 
-               minutes.format("%02d") + ":" + 
-               seconds.format("%02d");
+        // Dodaj .toNumber() dla pewności
+        return hours.toNumber().format("%02d") + ":" + 
+            minutes.toNumber().format("%02d") + ":" + 
+            seconds.toNumber().format("%02d");
+    }
+
+    // ALTERNATYWNE ROZWIĄZANIE - bardziej bezpieczne:
+/*     function getFormattedDuration() {
+        try {
+            var durationMs = getSessionDuration(); // Milisekundy
+            
+            // BEZPIECZNA konwersja na sekundy
+            var totalSeconds = (durationMs / 1000);
+            
+            // Upewnij się że to są liczby całkowite
+            if (totalSeconds has :toNumber) {
+                totalSeconds = totalSeconds.toNumber();
+            }
+            
+            // Bezpieczne obliczenia
+            var hours = 0;
+            var minutes = 0;
+            var seconds = 0;
+            
+            if (totalSeconds >= 3600) {
+                hours = totalSeconds / 3600;
+                totalSeconds = totalSeconds % 3600;
+            }
+            
+            if (totalSeconds >= 60) {
+                minutes = totalSeconds / 60;
+                seconds = totalSeconds % 60;
+            } else {
+                seconds = totalSeconds;
+            }
+            
+            // Bezpieczne formatowanie
+            var hoursStr = hours.format("%02d");
+            var minutesStr = minutes.format("%02d");
+            var secondsStr = seconds.format("%02d");
+            
+            return hoursStr + ":" + minutesStr + ":" + secondsStr;
+            
+        } catch (exception) {
+            System.println("SessionManager: Error formatting duration: " + exception.getErrorMessage());
+            return "00:00:00"; // Fallback
+        }
+    }     */
+    function getFormattedDuration() {
+        try {
+            var durationMs = getSessionDuration(); // Milisekundy
+            var totalSeconds = Math.floor(durationMs / 1000); // UŻYJ Math.floor!
+            
+            var hours = Math.floor(totalSeconds / 3600);
+            var minutes = Math.floor((totalSeconds % 3600) / 60);
+            var seconds = totalSeconds % 60;
+            
+            // DEBUG: Loguj wartości
+            System.println("SessionManager: Duration=" + durationMs + "ms, Formatted=" + 
+                        hours + ":" + minutes + ":" + seconds);
+            
+            return hours.format("%02d") + ":" + 
+                minutes.format("%02d") + ":" + 
+                seconds.format("%02d");
+                
+        } catch (exception) {
+            System.println("SessionManager: Error in getFormattedDuration: " + exception.getErrorMessage());
+            return "00:00:00";
+        }
     }
     
     // Session data management

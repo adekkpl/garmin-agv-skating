@@ -53,8 +53,16 @@ class MainView extends WatchUi.View {
     
     function onShow() {
         System.println("MainView: View shown");
-        WatchUi.requestUpdate();
+
+        // Debug session state
+        var sessionManager = app.getSessionManager();
+        if (sessionManager != null) {
+            System.println("MainView: Current session state: " + sessionManager.getStateString());
+            System.println("MainView: Current duration: " + sessionManager.getFormattedDuration());
+        }
+        
         startUpdateTimer();
+        WatchUi.requestUpdate();        
     }
     
     function onHide() {
@@ -75,8 +83,8 @@ class MainView extends WatchUi.View {
             drawSessionTimer(dc);
             drawHeartRate(dc);
             drawDistance(dc);
-            drawSessionStatus(dc);
-            drawStatusBar(dc);
+            //drawSessionStatus(dc);
+            //drawStatusBar(dc);
             
             // Draw animations if active
             if (trickAnimation) {
@@ -91,14 +99,16 @@ class MainView extends WatchUi.View {
     }
     
     // Draw session timer (center, large)
-    function drawSessionTimer(dc) {
+    /* function drawSessionTimer(dc) {
         try {
             var sessionManager = app.getSessionManager();
             var timeText = "00:00:00";
             var color = Graphics.COLOR_WHITE;
+            var stateText = "STOPPED";
             
             if (sessionManager != null) {
                 timeText = sessionManager.getFormattedDuration();
+                stateText = sessionManager.getStateString();
                 
                 // Color code based on session state
                 if (sessionManager.isActive()) {
@@ -113,20 +123,99 @@ class MainView extends WatchUi.View {
             // Main timer display
             dc.setColor(color, Graphics.COLOR_TRANSPARENT);
             dc.drawText(centerX, centerY - 20, Graphics.FONT_NUMBER_HOT, 
-                       timeText, Graphics.TEXT_JUSTIFY_CENTER);
+                   timeText, Graphics.TEXT_JUSTIFY_CENTER);
             
             // Timer label
             dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
-            dc.drawText(centerX, centerY - 25, Graphics.FONT_TINY, 
-                       "SESSION TIME", Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(centerX, centerY - 50, Graphics.FONT_TINY, 
+                    "SESSION TIME", Graphics.TEXT_JUSTIFY_CENTER);      
+
+            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(centerX, centerY + 15, Graphics.FONT_TINY, 
+                   stateText, Graphics.TEXT_JUSTIFY_CENTER); 
+
+            // DEBUG: Pokaż surowy czas w milisekundach
+            if (sessionManager != null) {
+                var rawDuration = sessionManager.getSessionDuration();
+                dc.drawText(centerX, centerY + 35, Graphics.FONT_XTINY, 
+                        "Raw: " + rawDuration + "ms", Graphics.TEXT_JUSTIFY_CENTER);
+            }                                             
                        
         } catch (exception) {
             System.println("MainView: Error drawing timer: " + exception.getErrorMessage());
+
+            // Fallback display przy błędzie
+            dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(centerX, centerY, Graphics.FONT_SMALL, 
+                   "TIMER ERROR", Graphics.TEXT_JUSTIFY_CENTER);
+        }
+    } */
+    function drawSessionTimer(dc) {
+        try {
+            var sessionManager = app.getSessionManager();
+            var timeText = "00:00:00";
+            var color = Graphics.COLOR_WHITE;
+            var stateText = "STOPPED";
+            
+            if (sessionManager != null) {
+                timeText = sessionManager.getFormattedDuration();
+                stateText = sessionManager.getStateString();
+                
+                // Color code based on session state
+                if (sessionManager.isActive()) {
+                    color = Graphics.COLOR_GREEN;
+                } else if (sessionManager.isPaused()) {
+                    color = Graphics.COLOR_YELLOW;
+                } else {
+                    color = Graphics.COLOR_WHITE;
+                }
+            }
+            
+            // === POPRAWIONE ROZMIESZCZENIE NA EKRANIE 454x454 ===
+            
+            // App title na górze
+            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(centerX, 15, Graphics.FONT_TINY, "AGV TRACKER", Graphics.TEXT_JUSTIFY_CENTER);
+            
+            // Status w prawym górnym rogu  
+            dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(screenWidth - 20, 15, Graphics.FONT_TINY, stateText, Graphics.TEXT_JUSTIFY_RIGHT);
+            dc.fillCircle(screenWidth - 35, 20, 5); // Mała kropka statusu
+            
+            // === GŁÓWNY TIMER W CENTRUM ===
+            
+            // Label timera
+            dc.setColor(Graphics.COLOR_LT_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(centerX, centerY - 60, Graphics.FONT_SMALL, 
+                    "SESSION TIME", Graphics.TEXT_JUSTIFY_CENTER);
+            
+            // GŁÓWNY TIMER - duży i wyraźny
+            dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(centerX, centerY - 20, Graphics.FONT_NUMBER_HOT, 
+                    timeText, Graphics.TEXT_JUSTIFY_CENTER);
+            
+            // === DEBUG INFO NA DOLE ===
+            
+            // Raw duration dla debugowania
+            if (sessionManager != null) {
+                var rawDuration = sessionManager.getSessionDuration();
+                dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+                dc.drawText(centerX, centerY + 40, Graphics.FONT_XTINY, 
+                        "Raw: " + rawDuration + "ms", Graphics.TEXT_JUSTIFY_CENTER);
+            }
+            
+        } catch (exception) {
+            System.println("MainView: Error drawing timer: " + exception.getErrorMessage());
+            
+            // Fallback display
+            dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(centerX, centerY, Graphics.FONT_SMALL, 
+                    "TIMER ERROR", Graphics.TEXT_JUSTIFY_CENTER);
         }
     }
     
     // Draw heart rate (top left)
-    function drawHeartRate(dc) {
+    /* function drawHeartRate(dc) {
         try {
             var hrText = "---";
             var color = Graphics.COLOR_DK_GRAY;
@@ -159,10 +248,33 @@ class MainView extends WatchUi.View {
         } catch (exception) {
             System.println("MainView: Error drawing heart rate: " + exception.getErrorMessage());
         }
+    } */
+    function drawHeartRate(dc) {
+        try {
+            var hrText = "---";
+            var color = Graphics.COLOR_DK_GRAY;
+            
+            var sensorManager = app.getSensorManager();
+            if (sensorManager != null) {
+                var heartRate = sensorManager.getHeartRate();
+                if (heartRate != null && heartRate > 0) {
+                    hrText = heartRate.format("%d");
+                    color = Graphics.COLOR_RED;
+                }
+            }
+            
+            // Heart rate w lewym górnym rogu
+            dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(20, 30, Graphics.FONT_MEDIUM, hrText, Graphics.TEXT_JUSTIFY_LEFT);
+            dc.drawText(20, 55, Graphics.FONT_TINY, "BPM", Graphics.TEXT_JUSTIFY_LEFT);
+            
+        } catch (exception) {
+            System.println("MainView: Error drawing heart rate: " + exception.getErrorMessage());
+        }
     }
     
     // Draw GPS distance (bottom)
-    function drawDistance(dc) {
+    /* function drawDistance(dc) {
         try {
             var gpsTracker = app.getGPSTracker();
             var distanceText = "0.0 m";
@@ -193,6 +305,35 @@ class MainView extends WatchUi.View {
             dc.drawText(centerX, screenHeight - 25, Graphics.FONT_TINY, 
                        "DISTANCE", Graphics.TEXT_JUSTIFY_CENTER);
                        
+        } catch (exception) {
+            System.println("MainView: Error drawing distance: " + exception.getErrorMessage());
+        }
+    } */
+    function drawDistance(dc) {
+        try {
+            var gpsTracker = app.getGPSTracker();
+            var distanceText = "0.0 m";
+            var color = Graphics.COLOR_DK_GRAY;
+            
+            if (gpsTracker != null) {
+                var distance = gpsTracker.getSessionDistance();
+                if (distance != null && distance > 0) {
+                    if (distance < 1000) {
+                        distanceText = distance.format("%.0f") + " m";
+                    } else {
+                        distanceText = (distance / 1000.0).format("%.2f") + " km";
+                    }
+                    color = Graphics.COLOR_BLUE;
+                }
+            }
+            
+            // Distance na dole ekranu
+            dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(centerX, screenHeight - 50, Graphics.FONT_MEDIUM, 
+                    distanceText, Graphics.TEXT_JUSTIFY_CENTER);
+            dc.drawText(centerX, screenHeight - 25, Graphics.FONT_TINY, 
+                    "DISTANCE", Graphics.TEXT_JUSTIFY_CENTER);
+                    
         } catch (exception) {
             System.println("MainView: Error drawing distance: " + exception.getErrorMessage());
         }
@@ -361,10 +502,13 @@ class MainView extends WatchUi.View {
                 // Odświeżaj co 1 sekundę (1000ms)
                 updateTimer.start(method(:onTimerUpdate), interval, true);
                 isTimerActive = true;
-                System.println("MainView: Update timer started");
+                //System.println("MainView: Update timer started");
+                System.println("MainView: Update timer started (interval=" + interval + "ms)");
             } catch (exception) {
                 System.println("MainView: Error starting timer: " + exception.getErrorMessage());
             }
+        } else {
+            System.println("MainView: Timer already active or updateTimer is null");
         }
     }
     function stopUpdateTimer() {
@@ -382,11 +526,14 @@ class MainView extends WatchUi.View {
     // Callback dla timera - wywoływany co sekundę
     function onTimerUpdate() {
         try {
-            // Sprawdź czy sesja jest aktywna
+            // ZAWSZE odświeżaj ekran (nie tylko gdy sesja aktywna)
+            WatchUi.requestUpdate();
+            
+            // Debug info
             var sessionManager = app.getSessionManager();
-            if (sessionManager != null && sessionManager.isActive()) {
-                // Sesja aktywna - odśwież ekran
-                WatchUi.requestUpdate();
+            if (sessionManager != null) {
+                System.println("MainView: Timer tick - " + sessionManager.getFormattedDuration() + 
+                            " (" + sessionManager.getStateString() + ")");
             }
         } catch (exception) {
             System.println("MainView: Error in timer update: " + exception.getErrorMessage());
