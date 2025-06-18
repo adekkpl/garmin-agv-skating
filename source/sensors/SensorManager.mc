@@ -85,14 +85,15 @@ class SensorManager {
             heartRateEnabled = true;
             accelEnabled = true;
             barometerEnabled = true;
-            gyroEnabled = true;
+            gyroEnabled = false; // Will be enabled separately
 
             // Create array of sensors to enable
             var sensorsToEnable = [];
             
             // Enable heart rate sensor - UPROSZCZONA WERSJA BEZ TYPE CASTING
             try {
-                Sensor.setEnabledSensors([Sensor.SENSOR_HEARTRATE]);
+                //Sensor.setEnabledSensors([Sensor.SENSOR_HEARTRATE]);
+                sensorsToEnable.add(Sensor.SENSOR_HEARTRATE);
 
                 // Dodaj akcelerometr jeśli dostępny
                 var sensorInfo = Sensor.getInfo();
@@ -105,7 +106,28 @@ class SensorManager {
                 // Enable the sensors we want
                 Sensor.setEnabledSensors(sensorsToEnable);
                 Sensor.enableSensorEvents(method(:onSensorEvent));
-                System.println("SensorManager: Heart rate sensor enabled");
+
+                // Spróbuj uruchomić gyroscope przez registerSensorDataListener
+                try {
+                    var gyroOptions = {
+                        :period => 1,               // 1 second sample time
+                        :gyroscope => {
+                            :enabled => true,       // Enable the gyroscope
+                            :sampleRate => 25       // 25 samples per second
+                        }
+                    };
+                    
+                    Sensor.registerSensorDataListener(method(:onHighFrequencySensorData), gyroOptions);
+                    gyroEnabled = true;
+                    System.println("SensorManager: Gyroscope enabled via registerSensorDataListener");
+                        
+                } catch (gyroException) {
+                    System.println("SensorManager: Gyroscope not available: " + gyroException.getErrorMessage());
+                    gyroEnabled = false;
+                }
+                    
+                System.println("SensorManager: Sensors enabled successfully");                          
+
             } catch (sensorException) {
                 System.println("SensorManager: Heart rate sensor failed: " + sensorException.getErrorMessage());
                 heartRateEnabled = false;
@@ -200,7 +222,7 @@ class SensorManager {
                 }
 
                 // ZMNIEJSZ LOGOWANIE - tylko co 10 czytanie
-                if (System.getTimer() % 5000 < 100) { // Co 10 sekund
+                if (System.getTimer() % 5000 < 100) { // Co 5 sekund
                     System.println("SensorManager: Accel = " + accelArray[0].format("%.1f") + 
                                 ", " + accelArray[1].format("%.1f") + 
                                 ", " + accelArray[2].format("%.1f"));
@@ -210,7 +232,7 @@ class SensorManager {
             }
 
             // Update gyroscope data
-            var gyroArray = null;
+            /* var gyroArray = null;
             if (info has :gyro && info.gyro != null) {
                 gyroArray = info.gyro as Lang.Array<Lang.Number>;
             } else if (info has :gyroscope && info.gyroscope != null) {
@@ -230,7 +252,7 @@ class SensorManager {
                                 ", " + y.format("%.1f") + 
                                 ", " + z.format("%.1f"));
                 }
-            }
+            } */
 
             // Update altitude if available
             if (info.altitude != null) {
@@ -593,6 +615,47 @@ class SensorManager {
             
         } catch (exception) {
             System.println("SensorManager: Error notifying jump: " + exception.getErrorMessage());
+        }
+    }
+
+    function onHighFrequencySensorData(sensorData as Sensor.SensorData) as Void {
+        try {
+            if (sensorData == null) {
+                return;
+            }
+            
+            // Check for gyroscope data
+            if (sensorData has :gyroscopeData && sensorData.gyroscopeData != null) {
+                var gyroData = sensorData.gyroscopeData;
+                
+                // GyroscopeData ma pola x, y, z jako Array<Float>
+                if (gyroData has :z && gyroData.z != null && gyroData.z.size() > 0) {
+                    // Weź ostatnią wartość z array
+                    var gyroZ = gyroData.z[gyroData.z.size() - 1];
+                    
+                    // Aktualizuj currentGyroData
+                    currentGyroData.put("x", gyroData has :x && gyroData.x.size() > 0 ? gyroData.x[gyroData.x.size() - 1] : 0.0);
+                    currentGyroData.put("y", gyroData has :y && gyroData.y.size() > 0 ? gyroData.y[gyroData.y.size() - 1] : 0.0);
+                    currentGyroData.put("z", gyroZ);
+                    
+                    // Loguj co 5 sekund
+                    if (System.getTimer() % 5000 < 100) {
+                        System.println("SensorManager: High-freq Gyro Z = " + gyroZ.format("%.1f") + " deg/s");
+                    }
+                    
+                    // Przekaż do RotationDetector
+                    if (rotationDetector != null) {
+                        try {
+                            rotationDetector.updateSensorData(currentGyroData);
+                        } catch (rotationException) {
+                            System.println("SensorManager: RotationDetector error: " + rotationException.getErrorMessage());
+                        }
+                    }
+                }
+            }
+            
+        } catch (exception) {
+            System.println("SensorManager: Error in high-frequency sensor callback: " + exception.getErrorMessage());
         }
     }
     

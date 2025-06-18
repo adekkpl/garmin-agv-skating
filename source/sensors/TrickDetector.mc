@@ -567,7 +567,7 @@ class TrickDetector {
                 var magnitude = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
                 
                 // Simple trick detection logic
-                if (magnitude > TAKEOFF_ACCEL_THRESHOLD + 9.8) {  // 9.8 is gravity
+                if (magnitude > TAKEOFF_ACCEL_THRESHOLD) {  //   (magnitude > TAKEOFF_ACCEL_THRESHOLD + 9.8)    - 9.8 is gravity
                     // FIXED: Proper dictionary syntax
                     var trickData = {
                         "magnitude" => magnitude
@@ -581,8 +581,27 @@ class TrickDetector {
     }
 
     // Cleanup resources
-    function cleanup() as Void {
-        stopDetection();
-        System.println("TrickDetector: Cleanup completed");
+    function cleanup() {
+        try {
+            stopDetection();
+            
+            // Unregister high-frequency sensor listener
+            try {
+                Sensor.unregisterSensorDataListener();
+                System.println("SensorManager: High-frequency sensor listener unregistered");
+            } catch (unregisterException) {
+                System.println("SensorManager: Error unregistering sensor listener: " + unregisterException.getErrorMessage());
+            }
+            
+            // Reset data
+            /* currentHeartRate = 0;
+            currentAccelData = {"x" => 0.0, "y" => 0.0, "z" => 9.8};
+            currentGyroData = {"x" => 0.0, "y" => 0.0, "z" => 0.0};
+            currentBarometricData = {"pressure" => 101325.0, "altitude" => 0.0}; */
+            
+            System.println("SensorManager: Cleanup completed");
+        } catch (exception) {
+            System.println("SensorManager: Error during cleanup: " + exception.getErrorMessage());
+        }
     }
 }
