@@ -205,6 +205,9 @@ class AggressiveSkatingApp extends Application.AppBase {
                     if (sensorManager has :setGPSTracker) {
                         sensorManager.setGPSTracker(gpsTracker);
                     }
+                    if (sessionStats != null) {
+                        sensorManager.setSessionStats(sessionStats);
+                    }
                 } catch (methodException) {
                     System.println("SensorManager methods not available: " + methodException.getErrorMessage());
                 }
@@ -337,18 +340,18 @@ class AggressiveSkatingApp extends Application.AppBase {
         }
     }
     
-    function onRotationDetected(direction, angle) {
+    function onRotationDetected(degrees, direction) {  // degrees first, direction second
         try {
-            System.println("App: Rotation detected - " + direction + " " + angle + "°");
+            System.println("App: Rotation detected - " + degrees + "° direction: " + direction);
             
             // Update statistics
             if (sessionStats != null) {
-                sessionStats.addRotation(direction, angle);
+                sessionStats.addRotation(degrees, direction);
             }
             
             // Notify views
             if (viewManager != null) {
-                viewManager.onRotationDetected(direction, angle);
+                viewManager.onRotationDetected(direction, degrees);  // views might expect direction first
             }
             
         } catch (exception) {

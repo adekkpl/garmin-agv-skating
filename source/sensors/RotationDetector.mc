@@ -270,7 +270,9 @@ class RotationDetector {
         
         // Trigger callback
         if (rotationDetectedCallback != null) {
-            rotationDetectedCallback.invoke(rotationDirection, currentRotation);
+            //rotationDetectedCallback.invoke(rotationDirection, currentRotation);
+            // direction = 1 (right) lub -1 (left)
+            rotationDetectedCallback.invoke(currentRotation, rotationDirection.equals("right") ? 1 : -1);
         }
         
         System.println("RotationDetector: Rotation completed - " + rotationDirection + 
@@ -342,6 +344,24 @@ class RotationDetector {
             "right" => rightRotations,
             "left" => leftRotations
         };
+    }
+
+    function updateSensorData(gyroData) {
+        if (gyroData != null) {
+            var z = gyroData.get("z");
+            if (z != null) {
+                var timestamp = System.getTimer();
+                
+                // Utwórz dictionary w formacie oczekiwanym przez updateRotationDetection
+                var sensorData = {
+                    "gyroscope" => {
+                        "z" => z
+                    }
+                };
+                
+                updateRotationDetection(sensorData, timestamp);
+            }
+        }
     }
     
     // Get formatted rotation display

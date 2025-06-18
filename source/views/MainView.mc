@@ -73,7 +73,12 @@ class MainView extends WatchUi.View {
     
     function onUpdate(dc) {
         try {
-            System.println("MainView: Updating display");
+            //System.println("MainView: Updating display");
+            
+            // Loguj tylko gdy naprawdę potrzeba (co 10 sekund)
+            if (System.getTimer() % 10000 < 100) {
+                System.println("MainView: Updating display (periodic log)");
+            }
             
             // Clear screen with black background
             dc.setColor(Graphics.COLOR_BLACK, Graphics.COLOR_BLACK);
@@ -153,11 +158,15 @@ class MainView extends WatchUi.View {
     function drawSessionTimer(dc) {
         try {
             var sessionManager = app.getSessionManager();
-            var timeText = "00:00:00";
+            
             var color = Graphics.COLOR_WHITE;
             var stateText = "STOPPED";
+            var timeText = "00:00:00";
+
+            var currentState = "STOPPED";
+            var durationText = "00:00:00";
             
-            if (sessionManager != null) {
+            /* if (sessionManager != null) {
                 timeText = sessionManager.getFormattedDuration();
                 stateText = sessionManager.getStateString();
                 
@@ -169,12 +178,21 @@ class MainView extends WatchUi.View {
                 } else {
                     color = Graphics.COLOR_WHITE;
                 }
+            } */
+            if (sessionManager != null) {
+                currentState = sessionManager.getStateString();
+                durationText = sessionManager.getFormattedDuration(); // To wywołuje za dużo logów!
+            }
+            // Loguj tylko co 5 sekund gdy sesja aktywna
+            var isActive = !currentState.equals("STOPPED");
+            if (isActive && System.getTimer() % 5000 < 100) {
+                System.println("MainView: Current duration: " + durationText);
             }
             
             // === POPRAWIONE ROZMIESZCZENIE NA EKRANIE 454x454 ===
             
             // App title na górze
-            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            /* dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
             dc.drawText(centerX, 15, Graphics.FONT_TINY, "AGV TRACKER", Graphics.TEXT_JUSTIFY_CENTER);
             
             // Status w prawym górnym rogu  
@@ -202,7 +220,27 @@ class MainView extends WatchUi.View {
                 dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
                 dc.drawText(centerX, centerY + 40, Graphics.FONT_XTINY, 
                         "Raw: " + rawDuration + "ms", Graphics.TEXT_JUSTIFY_CENTER);
+            } */
+
+            // Draw timer display
+            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(centerX, centerY - 80, Graphics.FONT_NUMBER_HOT, 
+                    durationText, Graphics.TEXT_JUSTIFY_CENTER);
+            
+            // Draw session state indicator
+            var stateColor = Graphics.COLOR_RED;
+            if (currentState.equals("ACTIVE")) {
+                stateColor = Graphics.COLOR_GREEN;
+            } else if (currentState.equals("PAUSED")) {
+                stateColor = Graphics.COLOR_YELLOW;
             }
+            
+            dc.setColor(stateColor, Graphics.COLOR_TRANSPARENT);
+            dc.fillCircle(centerX, centerY - 40, 8);
+            
+            dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(centerX, centerY - 20, Graphics.FONT_SMALL, 
+                    currentState, Graphics.TEXT_JUSTIFY_CENTER);
             
         } catch (exception) {
             System.println("MainView: Error drawing timer: " + exception.getErrorMessage());
@@ -532,8 +570,10 @@ class MainView extends WatchUi.View {
             // Debug info
             var sessionManager = app.getSessionManager();
             if (sessionManager != null) {
-                System.println("MainView: Timer tick - " + sessionManager.getFormattedDuration() + 
-                            " (" + sessionManager.getStateString() + ")");
+                if (System.getTimer() % 10000 < 100) {  // loguj co 10 sekund
+                    System.println("MainView: Timer tick debug - " + sessionManager.getFormattedDuration() + 
+                                   " (" + sessionManager.getStateString() + ")");
+                }
             }
         } catch (exception) {
             System.println("MainView: Error in timer update: " + exception.getErrorMessage());

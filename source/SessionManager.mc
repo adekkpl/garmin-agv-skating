@@ -390,12 +390,12 @@ class SessionManager {
     }     */
     function getFormattedDuration() {
         try {
-            var durationMs = getSessionDuration(); // Milisekundy
-            var totalSeconds = Math.floor(durationMs / 1000); // UŻYJ Math.floor!
+            /* var durationMs = getSessionDuration(); // Milisekundy
             
+            var totalSeconds = Math.floor(durationMs / 1000); // UŻYJ Math.floor!             
             var hours = Math.floor(totalSeconds / 3600);
             var minutes = Math.floor((totalSeconds % 3600) / 60);
-            var seconds = totalSeconds % 60;
+            var seconds = totalSeconds % 60; 
             
             // DEBUG: Loguj wartości
             System.println("SessionManager: Duration=" + durationMs + "ms, Formatted=" + 
@@ -403,7 +403,20 @@ class SessionManager {
             
             return hours.format("%02d") + ":" + 
                 minutes.format("%02d") + ":" + 
-                seconds.format("%02d");
+                seconds.format("%02d"); */
+ 
+            var duration = getSessionDuration() / 1000; // Convert to seconds
+    
+            var totalSeconds = duration;
+            var hours = (totalSeconds / 3600).toNumber();
+            var minutes = ((totalSeconds % 3600) / 60).toNumber();
+            var seconds = (totalSeconds % 60).toNumber();
+
+            var formattedDuration = hours.format("%d") + ":" + 
+                        minutes.format("%02d") + ":" + 
+                        seconds.format("%02d");
+                        
+            return formattedDuration;
                 
         } catch (exception) {
             System.println("SessionManager: Error in getFormattedDuration: " + exception.getErrorMessage());

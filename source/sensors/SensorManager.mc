@@ -57,6 +57,22 @@ class SensorManager {
             heartRateHistory[i] = 0;
         }
         
+        /* trickDetector = new TrickDetector();
+        if (trickDetector != null) {
+            trickDetector.startDetection();
+            System.println("SensorManager: TrickDetector initialized");
+        } */
+        try {
+            trickDetector = new TrickDetector();
+            if (trickDetector != null) {
+                trickDetector.startDetection();
+                System.println("SensorManager: TrickDetector initialized and started");
+            }
+        } catch (trickException) {
+            System.println("SensorManager: Failed to initialize TrickDetector: " + trickException.getErrorMessage());
+            trickDetector = null;
+        }        
+        
         System.println("SensorManager: Initialized");
     }
     
@@ -139,6 +155,20 @@ class SensorManager {
             if (info == null) {
                 return;
             }
+
+            // TYMCZASOWE DEBUG - usuń po sprawdzeniu
+            if (System.getTimer() % 10000 < 100) { // Co 10 sekund
+                System.println("=== DEBUG: Available Sensor.Info fields ===");
+                if (info has :accel) { System.println("- accel: YES"); }
+                if (info has :gyro) { System.println("- gyro: YES"); }
+                if (info has :gyroscope) { System.println("- gyroscope: YES"); }
+                if (info has :magnetometer) { System.println("- magnetometer: YES"); }
+                if (info has :mag) { System.println("- mag: YES"); }
+                if (info has :heartRate) { System.println("- heartRate: YES"); }
+                if (info has :pressure) { System.println("- pressure: YES"); }
+                if (info has :altitude) { System.println("- altitude: YES"); }
+                System.println("=== END DEBUG ===");
+            }            
             
             // Update heart rate
             if (info.heartRate != null) {
@@ -170,7 +200,7 @@ class SensorManager {
                 }
 
                 // ZMNIEJSZ LOGOWANIE - tylko co 10 czytanie
-                if (System.getTimer() % 10000 < 100) { // Co 10 sekund
+                if (System.getTimer() % 5000 < 100) { // Co 10 sekund
                     System.println("SensorManager: Accel = " + accelArray[0].format("%.1f") + 
                                 ", " + accelArray[1].format("%.1f") + 
                                 ", " + accelArray[2].format("%.1f"));
@@ -178,20 +208,64 @@ class SensorManager {
                 
                 System.println("SensorManager: Accel = " + accelArray[0] + ", " + accelArray[1] + ", " + accelArray[2]);
             }
+
+            // Update gyroscope data
+            var gyroArray = null;
+            if (info has :gyro && info.gyro != null) {
+                gyroArray = info.gyro as Lang.Array<Lang.Number>;
+            } else if (info has :gyroscope && info.gyroscope != null) {
+                gyroArray = info.gyroscope as Lang.Array<Lang.Number>;
+            }
             
+            if (gyroArray != null && gyroArray.size() >= 3) {
+                currentGyroData.put("x", gyroArray[0].toFloat());
+                currentGyroData.put("y", gyroArray[1].toFloat());
+                currentGyroData.put("z", gyroArray[2].toFloat());
+                
+                if (System.getTimer() % 5000 < 100) {
+                    var x = gyroArray[0] as Lang.Number;
+                    var y = gyroArray[1] as Lang.Number;
+                    var z = gyroArray[2] as Lang.Number;
+                    System.println("SensorManager: Gyro = " + x.format("%.1f") + 
+                                ", " + y.format("%.1f") + 
+                                ", " + z.format("%.1f"));
+                }
+            }
+
+            // Update altitude if available
+            if (info.altitude != null) {
+                var altitude = info.altitude;
+                currentBarometricData.put("altitude", altitude);
+                if (System.getTimer() % 10000 < 100) { // Co 10 sekund
+                    System.println("SensorManager: Altitude = " + altitude + " m");
+                }
+            }
+
+            // PRZEKAŻ dane do detektorów (TYLKO TUTAJ, nie w updateSensorData!)
+            // 1. Przekaż do TrickDetector (jeśli istnieje)
+            if (trickDetector != null) {
+                try {
+                    trickDetector.updateSensorData(currentAccelData, currentGyroData);
+                } catch (trickException) {
+                    System.println("SensorManager: TrickDetector error: " + trickException.getErrorMessage());
+                }
+            }
+            
+            // 2. Przekaż do RotationDetector (jeśli istnieje)
+            if (rotationDetector != null) {
+                try {
+                    rotationDetector.updateSensorData(currentGyroData);
+                } catch (rotationException) {
+                    System.println("SensorManager: RotationDetector error: " + rotationException.getErrorMessage());
+                }
+            }            
+
             // Update barometer/pressure if available
             /* if (info.pressure != null) {
                 var pressure = info.pressure;
                 currentBarometricData.put("pressure", pressure);
                 System.println("SensorManager: Pressure = " + pressure + " Pa");
-            } */
-            
-            // Update altitude if available
-            if (info.altitude != null) {
-                var altitude = info.altitude;
-                currentBarometricData.put("altitude", altitude);
-                System.println("SensorManager: Altitude = " + altitude + " m");
-            }
+            } */            
 
             lastUpdateTime = System.getTimer();
             
@@ -239,6 +313,12 @@ class SensorManager {
     } */
     function updateSensorData() as Void {
         try {
+
+            /* var sensorInfo = Sensor.getInfo();
+            if (sensorInfo == null) {
+                return;
+            } */
+
             lastUpdateTime = System.getTimer();
             
             // Get current sensor info
@@ -247,12 +327,19 @@ class SensorManager {
                 onSensorEvent(sensorInfo);
             }
             
-            // Notify trick detector if available
-            if (trickDetector != null && trickDetector has :updateSensorData) {
+            // Przekaż dane do TrickDetector
+            /* if (trickDetector != null) {
                 trickDetector.updateSensorData(currentAccelData, currentGyroData);
             }
+            // Przekaż dane do RotationDetector
+            if (rotationDetector != null) {
+                rotationDetector.updateSensorData(currentGyroData);
+            } */
             
-            System.println("SensorManager: Sensor data updated - HR: " + currentHeartRate);
+            // Opcjonalnie: dodaj logowanie co jakiś czas
+            if (System.getTimer() % 10000 < 100) {
+                System.println("SensorManager: Sensor data updated - HR: " + currentHeartRate);
+            }
             
         } catch (exception) {
             System.println("SensorManager: Error updating sensor data: " + exception.getErrorMessage());
@@ -306,6 +393,10 @@ class SensorManager {
     
     function setSensorUpdateCallback(callback) {
         sensorUpdateCallback = callback;
+    }
+    function setSessionStats(stats) {
+        sessionStats = stats;
+        System.println("SensorManager: SessionStats reference set");
     }
     
     // Public getters

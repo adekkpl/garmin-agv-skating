@@ -302,8 +302,12 @@ class SessionStats {
     } */
     // Add rotation to statistics
     function addRotation(degrees, direction) {
+        // degrees = liczba stopni (float)
+        // direction = 1 (right) lub -1 (left)
         if (sessionActive) {
             totalRotations += abs(degrees);
+            rightRotations += abs(degrees);
+            leftRotations += abs(degrees);
             
             if (direction != null) {
                 if (direction > 0) {
