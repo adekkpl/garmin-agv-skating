@@ -10,6 +10,7 @@ Aplikacja Garmin Connect IQ do śledzenia jazdy na rolkach agresywnych w skatepa
 - **Wykrywanie skoków** - automatyczna detekcja na podstawie danych z akcelerometru i wysokościomierza
 - **Wykrywanie grindów** - rozpoznawanie slajdów na rurach i murkach (takeoff → grind phase → landing)
 - **Analiza czasu grindowania** - pomiar czasu trwania każdego grinda
+- **Liczenie obrotów** - liczenie skoków z obrotami i skoków do grindów, liczenie ich w lewą i prawą stronę w celu wyliczenia preferencji obrotu
 - **Statystyki sesji** - łączna liczba skoków, grindów, najdłuższy grind
 
 #### 📊 Monitoring podstawowych danych
@@ -40,7 +41,7 @@ Aplikacja Garmin Connect IQ do śledzenia jazdy na rolkach agresywnych w skatepa
    - Spadek wysokości > 0.3m
    - Charakterystyczne przyspieszenie uderzenia > 1.5g
 
-#### Kalibracja i dostrajanie
+#### Kalibracja i dostrajanie - (w planach)
 - Algorytm dostosowuje się do stylu jazdy użytkownika
 - Filtrowanie fałszywych alarmów (np. jazda po nierównościach)
 - Konfiguracja czułości przez ustawienia menu
@@ -48,7 +49,7 @@ Aplikacja Garmin Connect IQ do śledzenia jazdy na rolkach agresywnych w skatepa
 ### Kompatybilność
 - **Garmin Forerunner 965** (główne urządzenie testowe)
 - **Fenix 6 Pro** (wsparcie dla starszych modeli)
-- **Minimalne SDK**: 4.0.0
+- **Minimalne SDK**: 5.0.0
 - **Języki**: Angielski, Czeski
 
 ### Wymagane sensory
@@ -58,7 +59,7 @@ Aplikacja Garmin Connect IQ do śledzenia jazdy na rolkach agresywnych w skatepa
 - Sensor tętna (opcjonalny)
 
 ### Instalacja
-1. Skopiuj plik .prg na urządzenie Garmin
+1. Skopiuj plik .prg na urządzenie Garmin. Wklej w folder GARMIN/APPS, odłącz zegarek i sprawdź aplikację
 2. Zainstaluj przez Garmin Connect Mobile lub Garmin Express
 3. Znajdź aplikację w menu "Apps" na zegarku
 
@@ -68,9 +69,12 @@ Aplikacja Garmin Connect IQ do śledzenia jazdy na rolkach agresywnych w skatepa
 3. Naciśnij START aby rozpocząć sesję
 4. Trenuj normalnie - aplikacja automatycznie wykryje elementy
 5. Naciśnij STOP aby zakończyć sesję
-6. Sesja zostanie automatycznie zapisana do Garmin Connect
+6. Sesja zostanie automatycznie zapisana do Garmin Connect lub nie jesli zostanie kliknięte odrzuć sesję
 
 ### Historia zmian
+#### v3.0.0
+- ✨ **NOWE**: Kompletna przebudowa, widoki w osobnych plikach, sensory w osobnych plikach. Dużo zmian.
+
 
 #### v2.0.0 (2025-06-03)
 - ✨ **NOWA FUNKCJA**: Automatyczne wykrywanie grindów i skoków
@@ -100,13 +104,15 @@ To jest projekt edukacyjny/hobbystyczny. Nie jest to profesjonalna aplikacja kom
 Testowana głównie na Garmin Forerunner 965.
 
 ### Planowane funkcje (roadmap)
-- [ ] Rozpoznawanie różnych typów grindów (frontside, backside, etc.)
 - [ ] Analiza wysokości skoków
 - [ ] Mapa skateparku z zaznaczonymi elementami
 - [ ] Współdzielenie sesji ze znajomymi
 - [ ] Progres i osiągnięcia
 - [ ] Integracja z mediami społecznościowymi
 
+
+
+##### my help stuff to use and maintain enviroment because i forgot about some stuff after few days ;))
 
 # Sprawdź co jest w folderze SDK
 dir "C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks\"
