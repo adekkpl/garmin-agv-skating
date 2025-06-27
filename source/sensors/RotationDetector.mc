@@ -346,7 +346,14 @@ class RotationDetector {
         };
     }
 
-    function updateSensorData(gyroData) {
+    function updateSensorData(gyroData as Lang.Dictionary) as Void {
+
+        /* if (System.getTimer() % 1000 < 40) { // Co sekundę
+            System.println("RotationDetector: Raw gyro Z = " + gyroZ + 
+                        ", State = " + currentState + 
+                        ", Current rotation = " + currentRotation);
+        } */
+
         if (gyroData != null) {
             var z = gyroData.get("z");
             if (z != null) {

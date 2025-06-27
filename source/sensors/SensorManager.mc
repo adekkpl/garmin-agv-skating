@@ -28,6 +28,7 @@ class SensorManager {
     var trickDetector;
     var rotationDetector;
     var gpsTracker;
+    var lastLoggedRotations = 0;  // Przechowuje ostatnią zalogowaną liczbę obrotów
     
     // Sensor callbacks
     var sensorUpdateCallback;
@@ -111,9 +112,13 @@ class SensorManager {
                 try {
                     var gyroOptions = {
                         :period => 1,               // 1 second sample time
+                        :accelerometer => {         // DODAJ TO!
+                            :enabled => true,       
+                            :sampleRate => 25       // 25 Hz dla skoków
+                        },
                         :gyroscope => {
-                            :enabled => true,       // Enable the gyroscope
-                            :sampleRate => 25       // 25 samples per second
+                            :enabled => true,       
+                            :sampleRate => 25       // 25 Hz dla obrotów
                         }
                     };
                     
@@ -618,7 +623,7 @@ class SensorManager {
         }
     }
 
-    function onHighFrequencySensorData(sensorData as Sensor.SensorData) as Void {
+/*     function onHighFrequencySensorData(sensorData as Sensor.SensorData) as Void {
         try {
             if (sensorData == null) {
                 return;
@@ -650,6 +655,87 @@ class SensorManager {
                         } catch (rotationException) {
                             System.println("SensorManager: RotationDetector error: " + rotationException.getErrorMessage());
                         }
+                    }
+                }
+            }
+            
+        } catch (exception) {
+            System.println("SensorManager: Error in high-frequency sensor callback: " + exception.getErrorMessage());
+        }
+    } */
+    function onHighFrequencySensorData(sensorData as Sensor.SensorData) as Void {
+        try {
+            if (sensorData == null) {
+                return;
+            }
+            
+            // Check for gyroscope data
+            if (sensorData has :gyroscopeData && sensorData.gyroscopeData != null) {
+                var gyroData = sensorData.gyroscopeData;
+                
+                // GyroscopeData ma pola x, y, z jako Array<Float>
+                if (gyroData has :z && gyroData.z != null && gyroData.z.size() > 0) {
+                    // Weź ostatnią wartość z array
+                    var gyroZ = gyroData.z[gyroData.z.size() - 1];
+                    
+                    // Aktualizuj currentGyroData
+                    currentGyroData.put("x", gyroData has :x && gyroData.x.size() > 0 ? 
+                        gyroData.x[gyroData.x.size() - 1] : 0.0);
+                    currentGyroData.put("y", gyroData has :y && gyroData.y.size() > 0 ? 
+                        gyroData.y[gyroData.y.size() - 1] : 0.0);
+                    currentGyroData.put("z", gyroZ);
+                    
+                    // WAŻNE: Przekaż dane do RotationDetector NATYCHMIAST
+                    if (rotationDetector != null) {
+                        try {
+                            // Przekazuj każdą próbkę do detektora
+                            rotationDetector.updateSensorData(currentGyroData);
+                            
+                            // Sprawdź czy wykryto nowe obroty
+                            var rotationStats = rotationDetector.getRotationStats();
+                            var totalRotations = rotationStats.get("rightRotations") + rotationStats.get("leftRotations");
+                            
+                            // Jeśli liczba obrotów się zmieniła, zaloguj i powiadom SessionStats
+                            if (totalRotations != lastLoggedRotations) {
+                                System.println("SensorManager: Rotation detected! Total: " + totalRotations);
+                                lastLoggedRotations = totalRotations;
+                                
+                                // Powiadom SessionStats o nowym obrocie
+                                if (sessionStats != null) {
+                                    sessionStats.addRotation();
+                                }
+                            }
+                            
+                        } catch (rotationException) {
+                            System.println("SensorManager: RotationDetector error: " + rotationException.getErrorMessage());
+                        }
+                    }
+                    
+                    // Loguj surowe dane co 5 sekund do debugowania
+                    if (System.getTimer() % 5000 < 40) { // 40ms window for 25Hz data
+                        System.println("SensorManager: Gyro Z = " + gyroZ.format("%.1f") + " deg/s");
+                    }
+                }
+            }
+            
+            // DODAJ OBSŁUGĘ AKCELEROMETRU DLA SKOKÓW
+            if (sensorData has :accelerometerData && sensorData.accelerometerData != null) {
+                var accelData = sensorData.accelerometerData;
+                
+                if (accelData has :x && accelData.x != null && accelData.x.size() > 0) {
+                    // Pobierz ostatnie wartości
+                    var accelX = accelData.x[accelData.x.size() - 1];
+                    var accelY = accelData.y[accelData.y.size() - 1];
+                    var accelZ = accelData.z[accelData.z.size() - 1];
+                    
+                    // Aktualizuj currentAccelData
+                    currentAccelData.put("x", accelX);
+                    currentAccelData.put("y", accelY);
+                    currentAccelData.put("z", accelZ);
+                    
+                    // Przekaż do TrickDetector
+                    if (trickDetector != null) {
+                        trickDetector.updateSensorData(currentAccelData, currentGyroData);
                     }
                 }
             }

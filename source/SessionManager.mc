@@ -1,6 +1,6 @@
 // SessionManager.mc
 // Garmin Aggressive Inline Skating Tracker v3.0.0
-// Session State Management
+// Session State Management   -- w stopAndSaveSession()  -> saveSessionData();    !! zapis w /session/activityRecorer->saveSession()
 using Toybox.Lang;
 using Toybox.System;
 using Toybox.Timer;
@@ -332,62 +332,6 @@ class SessionManager {
         return result;
     }
     
-    function getFormattedDurationXXX() {
-        var duration = getSessionDuration() / 1000; // Convert to seconds
-        //var totalSeconds = duration.toNumber();
-
-        var hours = duration / 3600;
-        var minutes = (duration % 3600) / 60;
-        var seconds = duration % 60;
-        
-        // Dodaj .toNumber() dla pewności
-        return hours.toNumber().format("%02d") + ":" + 
-            minutes.toNumber().format("%02d") + ":" + 
-            seconds.toNumber().format("%02d");
-    }
-
-    // ALTERNATYWNE ROZWIĄZANIE - bardziej bezpieczne:
-/*     function getFormattedDuration() {
-        try {
-            var durationMs = getSessionDuration(); // Milisekundy
-            
-            // BEZPIECZNA konwersja na sekundy
-            var totalSeconds = (durationMs / 1000);
-            
-            // Upewnij się że to są liczby całkowite
-            if (totalSeconds has :toNumber) {
-                totalSeconds = totalSeconds.toNumber();
-            }
-            
-            // Bezpieczne obliczenia
-            var hours = 0;
-            var minutes = 0;
-            var seconds = 0;
-            
-            if (totalSeconds >= 3600) {
-                hours = totalSeconds / 3600;
-                totalSeconds = totalSeconds % 3600;
-            }
-            
-            if (totalSeconds >= 60) {
-                minutes = totalSeconds / 60;
-                seconds = totalSeconds % 60;
-            } else {
-                seconds = totalSeconds;
-            }
-            
-            // Bezpieczne formatowanie
-            var hoursStr = hours.format("%02d");
-            var minutesStr = minutes.format("%02d");
-            var secondsStr = seconds.format("%02d");
-            
-            return hoursStr + ":" + minutesStr + ":" + secondsStr;
-            
-        } catch (exception) {
-            System.println("SessionManager: Error formatting duration: " + exception.getErrorMessage());
-            return "00:00:00"; // Fallback
-        }
-    }     */
     function getFormattedDuration() {
         try {
             /* var durationMs = getSessionDuration(); // Milisekundy

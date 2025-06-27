@@ -1,6 +1,6 @@
 // ActivityRecorder.mc
 // Garmin Aggressive Inline Skating Tracker v3.0.0
-// Activity Recording for Garmin Connect
+// Activity Recording for Garmin Connect      --- saveSession()
 using Toybox.Lang;
 using Toybox.ActivityRecording;
 using Toybox.System;
@@ -140,7 +140,7 @@ class ActivityRecorder {
             updateCustomFields();
             
             // Save the session
-            session.save();
+            //session.save();
             session = null;
             
             System.println("ActivityRecorder: Session saved to Garmin Connect");

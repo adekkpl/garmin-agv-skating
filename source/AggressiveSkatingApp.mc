@@ -227,7 +227,7 @@ class AggressiveSkatingApp extends Application.AppBase {
             if (rotationDetector != null) {
                 try {
                     if (rotationDetector has :setRotationDetectedCallback) {
-                        rotationDetector.setRotationDetectedCallback(method(:onRotationDetected));
+                        rotationDetector.setRotationDetectedCallback(method(:onRotationDetected));                        
                     }
                 } catch (callbackException) {
                     System.println("RotationDetector callback not available: " + callbackException.getErrorMessage());
@@ -351,7 +351,7 @@ class AggressiveSkatingApp extends Application.AppBase {
             
             // Notify views
             if (viewManager != null) {
-                viewManager.onRotationDetected(direction, degrees);  // views might expect direction first
+                viewManager.onRotationDetected(degrees, direction); 
             }
             
         } catch (exception) {
