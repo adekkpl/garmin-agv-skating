@@ -17,6 +17,7 @@ class AggressiveSkatingApp extends Application.AppBase {
     var trickDetector;
     var rotationDetector;      // NOWY: Wykrywanie obrotów
     var gpsTracker;           // NOWY: Dedykowany GPS
+    var alertManager;         // NOWY: Alerty dźwiękowe dla debugowania
     
     // View management
     var currentView;
@@ -152,21 +153,29 @@ class AggressiveSkatingApp extends Application.AppBase {
                 return false;
             }
             
-            /* 
+            /* to było skasowane */
             // Initialize trick detection - moved to sensors 
             logDevice("Creating TrickDetector");
             trickDetector = new TrickDetector();
             if (trickDetector == null) {
                 logCritical("Failed to create TrickDetector");
                 return false;
-            } */
-            logDevice("TrickDetector will be initialized by SensorManager");
+            }  /* */
+            //logDevice("TrickDetector will be initialized by SensorManager");
             
             // Initialize rotation detection
             logDevice("Creating RotationDetector");
             rotationDetector = new RotationDetector();
             if (rotationDetector == null) {
                 logCritical("Failed to create RotationDetector");
+                return false;
+            }
+            
+            // Initialize alert manager for debug feedback
+            logDevice("Creating AlertManager");
+            alertManager = new AlertManager();
+            if (alertManager == null) {
+                logCritical("Failed to create AlertManager");
                 return false;
             }
             
@@ -197,7 +206,10 @@ class AggressiveSkatingApp extends Application.AppBase {
                 // Tylko wywołuj metody jeśli istnieją
                 try {
                     if (sensorManager has :setTrickDetector) {
-                        sensorManager.setTrickDetector(trickDetector);
+                        //sensorManager.setTrickDetector(trickDetector);
+                        if (trickDetector != null) {
+                            sensorManager.setTrickDetector(trickDetector);
+                        }
                     }
                     if (sensorManager has :setRotationDetector) {
                         sensorManager.setRotationDetector(rotationDetector);
@@ -218,6 +230,11 @@ class AggressiveSkatingApp extends Application.AppBase {
                 try {
                     if (trickDetector has :setTrickDetectedCallback) {
                         trickDetector.setTrickDetectedCallback(method(:onTrickDetected));
+                    }
+                    // CRITICAL FIX: Link AlertManager for audio feedback
+                    if (trickDetector has :setAlertManager && alertManager != null) {
+                        trickDetector.setAlertManager(alertManager);
+                        System.println("AggressiveSkatingApp: AlertManager linked to TrickDetector");
                     }
                 } catch (callbackException) {
                     System.println("TrickDetector callback not available: " + callbackException.getErrorMessage());
@@ -253,6 +270,29 @@ class AggressiveSkatingApp extends Application.AppBase {
                 } catch (callbackException) {
                     System.println("SessionManager callback not available: " + callbackException.getErrorMessage());
                 }
+            }
+            
+            // NEW: Setup AlertManager integration
+            if (alertManager != null) {
+                // Connect TrickDetector with AlertManager
+                if (trickDetector != null) {
+                    try {
+                        if (trickDetector has :setAlertManager) {
+                            trickDetector.setAlertManager(alertManager);
+                            logDevice("TrickDetector linked with AlertManager");
+                        }
+                        if (trickDetector has :setRotationDetector) {
+                            trickDetector.setRotationDetector(rotationDetector);
+                            logDevice("TrickDetector linked with RotationDetector");
+                        }
+                    } catch (linkException) {
+                        System.println("TrickDetector-AlertManager linking failed: " + linkException.getErrorMessage());
+                    }
+                }
+                
+                // Enable debug mode by default for testing
+                alertManager.setDebugMode(true);
+                logDevice("AlertManager debug mode enabled");
             }
 
             // Start sensors immediately after setup
@@ -311,6 +351,9 @@ class AggressiveSkatingApp extends Application.AppBase {
             }
             if (rotationDetector != null) {
                 rotationDetector.cleanup();
+            }
+            if (alertManager != null) {
+                alertManager.cleanup();
             }
             
             logDevice("Resources cleaned up");
@@ -416,6 +459,7 @@ class AggressiveSkatingApp extends Application.AppBase {
     function getRotationDetector() { return rotationDetector; }
     function getGPSTracker() { return gpsTracker; }
     function getViewManager() { return viewManager; }
+    function getAlertManager() { return alertManager; }
     
     // Session control methods
     function startSession() {

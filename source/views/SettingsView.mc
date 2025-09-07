@@ -147,6 +147,34 @@ class SettingsView extends WatchUi.View {
         dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
         dc.drawText(screenWidth - 20, yPos, Graphics.FONT_TINY, 
                    rotationStatus, Graphics.TEXT_JUSTIFY_RIGHT);
+        yPos += lineHeight;
+        
+        // DEBUG: Alert system status  
+        var alertManager = getAlertManager();
+        var alertStatus = "N/A";
+        if (alertManager != null) {
+            var stats = alertManager.getAlertStats();
+            if (stats != null && stats.get("debugMode")) {
+                alertStatus = "ON (" + stats.get("totalAlerts") + ")";
+            } else {
+                alertStatus = "OFF";
+            }
+        }
+        
+        dc.setColor(Graphics.COLOR_RED, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(20, yPos, Graphics.FONT_TINY, "Debug Alerts:", Graphics.TEXT_JUSTIFY_LEFT);
+        dc.setColor(Graphics.COLOR_WHITE, Graphics.COLOR_TRANSPARENT);
+        dc.drawText(screenWidth - 20, yPos, Graphics.FONT_TINY, 
+                   alertStatus, Graphics.TEXT_JUSTIFY_RIGHT);
+        yPos += lineHeight;
+        
+        // DEBUG: Last detection info
+        var lastDetectionInfo = getLastDetectionInfo();
+        if (lastDetectionInfo != null) {
+            dc.setColor(Graphics.COLOR_DK_GRAY, Graphics.COLOR_TRANSPARENT);
+            dc.drawText(centerX, yPos, Graphics.FONT_XTINY, 
+                       lastDetectionInfo, Graphics.TEXT_JUSTIFY_CENTER);
+        }
     }
     
     // Draw app information
@@ -245,6 +273,71 @@ class SettingsView extends WatchUi.View {
         } catch (exception) {
             System.println("SettingsView: Error in onSessionStateChange: " + exception.getErrorMessage());
         }
+    }
+    
+    // DEBUG: Helper functions for debug information
+    function getAlertManager() {
+        try {
+            // Get AlertManager through SensorManager or directly from app
+            var sensorManager = app.getSensorManager();
+            if (sensorManager != null && sensorManager has :getAlertManager) {
+                return sensorManager.getAlertManager();
+            }
+        } catch (exception) {
+            System.println("SettingsView: Error getting AlertManager: " + exception.getErrorMessage());
+        }
+        return null;
+    }
+    
+    function getLastDetectionInfo() {
+        try {
+            var trickDetector = app.getTrickDetector();
+            var rotationDetector = app.getRotationDetector();
+            
+            if (trickDetector != null) {
+                var lastTrickTime = trickDetector.getTimeSinceLastTrick();
+                if (lastTrickTime >= 0 && lastTrickTime < 60000) { // Within last minute
+                    return "Last trick: " + (lastTrickTime / 1000).format("%.1f") + "s ago";
+                }
+            }
+            
+            if (rotationDetector != null) {
+                var stats = rotationDetector.getRotationStats();
+                if (stats != null) {
+                    var lastRotation = stats.get("lastRotationTime");
+                    if (lastRotation != null && lastRotation > 0) {
+                        var timeSince = System.getTimer() - lastRotation;
+                        if (timeSince < 60000) { // Within last minute
+                            return "Last rotation: " + (timeSince / 1000).format("%.1f") + "s ago";
+                        }
+                    }
+                }
+            }
+            
+        } catch (exception) {
+            System.println("SettingsView: Error getting detection info: " + exception.getErrorMessage());
+        }
+        
+        return null;
+    }
+    
+    // Toggle debug mode (for future UI interaction)
+    function toggleDebugMode() {
+        try {
+            var alertManager = getAlertManager();
+            if (alertManager != null) {
+                var stats = alertManager.getAlertStats();
+                var currentMode = stats != null ? stats.get("debugMode") : false;
+                alertManager.setDebugMode(!currentMode);
+                
+                System.println("SettingsView: Debug mode " + (!currentMode ? "enabled" : "disabled"));
+                WatchUi.requestUpdate();
+                return !currentMode;
+            }
+        } catch (exception) {
+            System.println("SettingsView: Error toggling debug mode: " + exception.getErrorMessage());
+        }
+        return false;
     }
     
     // Cleanup

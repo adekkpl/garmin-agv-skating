@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/krawc/OneDrive/Hobby/Programowanie Garmin/Garmin Projects/**)",
+      "Bash(powershell:*)",
+      "Bash(find:*)"
+    ]
+  },
+  "outputStyle": "comprehensive-educator"
+}

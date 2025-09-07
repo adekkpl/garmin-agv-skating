@@ -15,14 +15,14 @@ class TrickDetector {
     const STATE_LANDING = 4;
 
     // Improved detection thresholds - przenieś przed function initialize()
-    // Detection thresholds
-    const TAKEOFF_ACCEL_THRESHOLD = 1.5;      // Reduced from 2.0g
-    const TAKEOFF_HEIGHT_THRESHOLD = 0.2;     // Reduced from 0.3m
-    const GRIND_HEIGHT_STABILITY = 0.15;      // Reduced from 0.2m
-    const GRIND_MIN_DURATION = 300;           // Reduced from 500ms
-    const LANDING_ACCEL_THRESHOLD = 1.3;      // Reduced from 1.5g
-    const VIBRATION_THRESHOLD = 0.4;          // Reduced from 0.5g
-    const MIN_JUMP_HEIGHT = 0.15;             // Minimum height for jump
+    // Detection thresholds - FIXED: More realistic values for actual skating
+    const TAKEOFF_ACCEL_THRESHOLD = 3.0;      // INCREASED: 3.0g change from baseline (real jump needed)
+    const TAKEOFF_HEIGHT_THRESHOLD = 0.4;     // INCREASED: 0.4m minimum height change
+    const GRIND_HEIGHT_STABILITY = 0.2;       // Restored from 0.15m
+    const GRIND_MIN_DURATION = 500;           // Restored from 300ms
+    const LANDING_ACCEL_THRESHOLD = 2.5;      // INCREASED: 2.5g landing impact
+    const VIBRATION_THRESHOLD = 0.8;          // INCREASED: 0.8g vibration threshold
+    const MIN_JUMP_HEIGHT = 0.3;              // INCREASED: 0.3m minimum jump height
     const BUFFER_SIZE = 20;
     const CALIBRATION_SAMPLES = 50;
 
@@ -39,9 +39,9 @@ class TrickDetector {
     var lastUpdateTime;
     
     // Analysis buffers - properly sized
-    var accelBuffer as Lang.Array<Lang.Float> = new Lang.Array<Lang.Float>[BUFFER_SIZE];
-    var altitudeBuffer as Lang.Array<Lang.Float> = new Lang.Array<Lang.Float>[BUFFER_SIZE];
-    var heightChangeBuffer as Lang.Array<Lang.Float> = new Lang.Array<Lang.Float>[BUFFER_SIZE];
+    var accelBuffer = [];
+    var altitudeBuffer = [];
+    var heightChangeBuffer = [];
     var bufferIndex = 0;
     
     // Calibration and filtering
@@ -62,26 +62,43 @@ class TrickDetector {
     
     // Callbacks
     var trickDetectedCallback;
+    
+    // New: Integration with other detectors
+    var rotationDetector;
+    var alertManager;
+    var diagnosticLogger;        // NEW: Comprehensive diagnostic logging system
+    
+    // New: Jump-rotation correlation tracking
+    var jumpStartTime;
+    var expectedRotationEnd;
+    var jumpDetectionWindow = 2000; // 2 seconds window to correlate jump with rotation
 
     function initialize() {
         currentState = STATE_RIDING;
         previousState = STATE_RIDING;
         
         // Initialize buffers
-        accelBuffer = new Lang.Array<Lang.Float>[BUFFER_SIZE];
-        altitudeBuffer = new Lang.Array<Lang.Float>[BUFFER_SIZE];
-        heightChangeBuffer = new Lang.Array<Lang.Float>[BUFFER_SIZE];
-        
+        accelBuffer = [];
+        altitudeBuffer = [];
+        heightChangeBuffer = [];
         for (var i = 0; i < BUFFER_SIZE; i++) {
-            accelBuffer[i] = 9.8; // Standard gravity
-            altitudeBuffer[i] = 0.0;
-            heightChangeBuffer[i] = 0.0;
+            accelBuffer.add(9.8);
+            altitudeBuffer.add(0.0);
+            heightChangeBuffer.add(0.0);
         }
         
         baselineAccel = {"x" => 0.0, "y" => 0.0, "z" => 9.8};
         takeoffStartTime = null;
         grindStartTime = null;
         lastUpdateTime = 0;
+        
+        // NEW: Initialize diagnostic logger for comprehensive analysis
+        diagnosticLogger = new DiagnosticLogger();
+        diagnosticLogger.initialize();
+        diagnosticLogger.logInfo("TrickDetector: Initialized with diagnostic logging enabled");
+        diagnosticLogger.logDebug("Detection thresholds - Takeoff: " + TAKEOFF_ACCEL_THRESHOLD + "g, " +
+                                 "Height: " + TAKEOFF_HEIGHT_THRESHOLD + "m, " +
+                                 "Landing: " + LANDING_ACCEL_THRESHOLD + "g");
         
         System.println("TrickDetector: Initialized with improved thresholds");
     }
@@ -100,7 +117,20 @@ class TrickDetector {
             var altitude = sensorData.get("altitude");
             var pressure = sensorData.get("pressure");
             
+            // NEW: Comprehensive sensor data logging for analysis
+            if (diagnosticLogger != null) {
+                // Log all sensor inputs with detailed analysis
+                diagnosticLogger.logSensorData("accelerometer", accelData, timestamp);
+                if (pressure != null) {
+                    var baroData = {"pressure" => pressure, "altitude" => altitude};
+                    diagnosticLogger.logSensorData("barometer", baroData, timestamp);
+                }
+            }
+            
             if (accelData == null) {
+                if (diagnosticLogger != null) {
+                    diagnosticLogger.logWarning("Missing accelerometer data at timestamp " + timestamp);
+                }
                 return;
             }
             
@@ -125,6 +155,17 @@ class TrickDetector {
             // Update buffers
             updateBuffers(accelMagnitude, currentHeight);
             
+            // NEW: Log current detection state and key parameters
+            if (diagnosticLogger != null) {
+                var stateString = getCurrentStateString();
+                var heightChange = getRecentHeightChange();
+                
+                diagnosticLogger.logDebug("STATE: " + stateString + 
+                                         " | Accel: " + accelMagnitude.toString() + "g" +
+                                         " | Height: " + currentHeight.toString() + "m" +
+                                         " | ΔH: " + heightChange.toString() + "m");
+            }
+            
             // State machine
             switch (currentState) {
                 case STATE_RIDING:
@@ -142,6 +183,14 @@ class TrickDetector {
                 case STATE_LANDING:
                     checkLandingComplete(accelData, currentHeight, timestamp);
                     break;
+            }
+            
+            // NEW: Log state transitions for analysis
+            if (diagnosticLogger != null && currentState != previousState) {
+                diagnosticLogger.logInfo("STATE TRANSITION: " + 
+                                       getStateString(previousState) + " → " + 
+                                       getCurrentStateString());
+                previousState = currentState;
             }
             
             // Timeout protection
@@ -176,7 +225,7 @@ class TrickDetector {
             
             isCalibrated = true;
             System.println("TrickDetector: Calibration complete - Baseline Z: " + 
-                         baselineAccel.get("z").format("%.2f") + "g");
+                         baselineAccel.get("z").toString() + "g");
         }
     }
 
@@ -191,13 +240,17 @@ class TrickDetector {
 
     // Update circular buffers
     function updateBuffers(accelMagnitude, height) {
-        accelBuffer[bufferIndex] = accelMagnitude;
-        altitudeBuffer[bufferIndex] = height;
-        
+        var aBuf = accelBuffer as Lang.Array;
+        var altBuf = altitudeBuffer as Lang.Array;
+        var hBuf = heightChangeBuffer as Lang.Array;
+
+        aBuf[bufferIndex] = accelMagnitude;
+        altBuf[bufferIndex] = height;
+
         // Calculate height change rate
         var prevIndex = (bufferIndex - 1 + BUFFER_SIZE) % BUFFER_SIZE;
-        heightChangeBuffer[bufferIndex] = height - altitudeBuffer[prevIndex];
-        
+        hBuf[bufferIndex] = height - altBuf[prevIndex];
+
         bufferIndex = (bufferIndex + 1) % BUFFER_SIZE;
     }
 
@@ -210,14 +263,59 @@ class TrickDetector {
 
     // Check for takeoff initiation
     function checkForTakeoff(accelData, height, timestamp) {
-        var accelMagnitude = accelBuffer[(bufferIndex - 1 + BUFFER_SIZE) % BUFFER_SIZE];
-        var baselineZ = baselineAccel.get("z");
+        var aBuf = accelBuffer as Lang.Array;
+        var accelMagnitude = aBuf[(bufferIndex - 1 + BUFFER_SIZE) % BUFFER_SIZE];
         
-        // Look for sudden acceleration increase
-        var accelIncrease = accelMagnitude - baselineZ;
+        // CRITICAL FIX: Compare magnitude with baseline magnitude, not just Z component
+        var baselineMagnitude = Math.sqrt(
+            baselineAccel.get("x") * baselineAccel.get("x") +
+            baselineAccel.get("y") * baselineAccel.get("y") +
+            baselineAccel.get("z") * baselineAccel.get("z")
+        );
+        
+        // Look for sudden acceleration change from baseline
+        var accelIncrease = abs(accelMagnitude - baselineMagnitude);
         
         // Check for upward acceleration and height change
         var heightChange = getRecentHeightChange();
+        
+        // NEW: Comprehensive takeoff detection analysis
+        if (diagnosticLogger != null) {
+            var threshold = TAKEOFF_ACCEL_THRESHOLD * sensitivityMultiplier;
+            var accelTest = accelIncrease > threshold;
+            var heightTest = heightChange > 0.1;
+            
+            // Create detailed threshold analysis
+            var thresholds = {
+                "accelThreshold" => threshold,
+                "heightThreshold" => 0.1,
+                "sensitivity" => sensitivityMultiplier
+            };
+            
+            var sensorValues = {
+                "accelIncrease" => accelIncrease,
+                "heightChange" => heightChange,
+                "accelMagnitude" => accelMagnitude,
+                "baselineMagnitude" => baselineMagnitude
+            };
+            
+            var detected = accelTest || heightTest;
+            var confidence = max(
+                accelIncrease / threshold,
+                heightChange / 0.1
+            );
+            
+            // Log detailed detection analysis
+            diagnosticLogger.logDetectionEvent("takeoff", detected, confidence, 
+                                              sensorValues, thresholds);
+            
+            if (!detected) {
+                diagnosticLogger.logDebug("TAKEOFF REJECTED: Accel=" + accelIncrease.toString() + 
+                                        "g (need >" + threshold.toString() + 
+                                        "g), Height=" + heightChange.toString() + 
+                                        "m (need >0.1m)");
+            }
+        }
         
         if (accelIncrease > TAKEOFF_ACCEL_THRESHOLD * sensitivityMultiplier || 
             heightChange > 0.1) {
@@ -227,9 +325,16 @@ class TrickDetector {
             maxJumpHeight = height;
             currentState = STATE_TAKEOFF;
             
+            // Enhanced detection logging
+            if (diagnosticLogger != null) {
+                diagnosticLogger.logInfo("TAKEOFF CONFIRMED: Accel increase=" + 
+                                       accelIncrease.toString() + "g, Height change=" + 
+                                       heightChange.toString() + "m");
+            }
+            
             System.println("TrickDetector: Takeoff detected - Accel: " + 
-                         accelIncrease.format("%.2f") + "g, Height change: " + 
-                         heightChange.format("%.2f") + "m");
+                         accelIncrease.toString() + "g, Height change: " + 
+                         heightChange.toString() + "m");
         }
     }
 
@@ -245,7 +350,7 @@ class TrickDetector {
         // Check if sufficient height gained for jump
         if (heightGain > TAKEOFF_HEIGHT_THRESHOLD * sensitivityMultiplier) {
             currentState = STATE_AIRBORNE;
-            System.println("TrickDetector: Airborne - Height gain: " + heightGain.format("%.2f") + "m");
+            System.println("TrickDetector: Airborne - Height gain: " + heightGain.toString() + "m");
         }
         
         // Timeout if takeoff takes too long
@@ -266,13 +371,13 @@ class TrickDetector {
             grindStartTime = timestamp;
             grindHeight = height;
             currentState = STATE_GRINDING;
-            System.println("TrickDetector: Grind started - Height: " + height.format("%.2f") + 
-                         "m, Stability: " + heightStability.format("%.2f"));
+            System.println("TrickDetector: Grind started - Height: " + height.toString() + 
+                         "m, Stability: " + heightStability.toString());
         }
         // Check for landing (significant height drop)
         else if (heightChange < -0.15) {
             currentState = STATE_LANDING;
-            System.println("TrickDetector: Landing detected - Height drop: " + heightChange.format("%.2f") + "m");
+            System.println("TrickDetector: Landing detected - Height drop: " + heightChange.toString() + "m");
         }
         
         // Timeout if airborne too long
@@ -306,7 +411,8 @@ class TrickDetector {
 
     // Check if landing is complete
     function checkLandingComplete(accelData, height, timestamp) {
-        var accelMagnitude = accelBuffer[(bufferIndex - 1 + BUFFER_SIZE) % BUFFER_SIZE];
+        var aBuf = accelBuffer as Lang.Array;
+        var accelMagnitude = aBuf[(bufferIndex - 1 + BUFFER_SIZE) % BUFFER_SIZE];
         var baselineZ = baselineAccel.get("z");
         
         // Look for impact (high acceleration)
@@ -326,8 +432,9 @@ class TrickDetector {
             return 0.0;
         }
         
-        var recentHeight = altitudeBuffer[(bufferIndex - 1 + BUFFER_SIZE) % BUFFER_SIZE];
-        var olderHeight = altitudeBuffer[(bufferIndex - 5 + BUFFER_SIZE) % BUFFER_SIZE];
+        var altBuf = altitudeBuffer as Lang.Array;
+        var recentHeight = altBuf[(bufferIndex - 1 + BUFFER_SIZE) % BUFFER_SIZE];
+        var olderHeight = altBuf[(bufferIndex - 5 + BUFFER_SIZE) % BUFFER_SIZE];
         
         return recentHeight - olderHeight;
     }
@@ -341,7 +448,8 @@ class TrickDetector {
         // Calculate mean
         for (var i = 0; i < count; i++) {
             var index = (bufferIndex - 1 - i + BUFFER_SIZE) % BUFFER_SIZE;
-            sum += altitudeBuffer[index];
+            var altBuf = altitudeBuffer as Lang.Array;
+            sum += altBuf[index];
         }
         mean = sum / count;
         
@@ -349,7 +457,8 @@ class TrickDetector {
         var variance = 0.0;
         for (var i = 0; i < count; i++) {
             var index = (bufferIndex - 1 - i + BUFFER_SIZE) % BUFFER_SIZE;
-            var diff = altitudeBuffer[index] - mean;
+            var altBuf = altitudeBuffer as Lang.Array;
+            var diff = altBuf[index] - mean;
             variance += diff * diff;
         }
         
@@ -397,12 +506,16 @@ class TrickDetector {
         
         // Only count as jump if sufficient height
         if (jumpHeight > MIN_JUMP_HEIGHT) {
+            // Check for rotation during jump
+            var rotationAngle = checkRotationDuringJump(timestamp);
+            
             var trickData = {
                 "type" => "jump",
                 "duration" => duration,
                 "height" => jumpHeight,
                 "maxHeight" => jumpHeight,
-                "timestamp" => timestamp
+                "timestamp" => timestamp,
+                "rotation" => rotationAngle
             };
             
             totalJumpsDetected++;
@@ -411,8 +524,12 @@ class TrickDetector {
             
             triggerTrickDetected("jump", trickData);
             
-            System.println("TrickDetector: Jump completed - Height: " + jumpHeight.format("%.2f") + 
-                         "m, Duration: " + duration + "ms");
+            // Play alert based on rotation
+            playJumpAlert(rotationAngle);
+            
+            System.println("TrickDetector: Jump completed - Height: " + jumpHeight.toString() + 
+                         "m, Duration: " + duration + "ms, Rotation: " + 
+                         (rotationAngle != null ? rotationAngle.toString() + "°" : "none"));
         }
         
         currentState = STATE_RIDING;
@@ -495,6 +612,24 @@ class TrickDetector {
                 return "UNKNOWN";
         }
     }
+    
+    // Get state name for given state value
+    function getStateString(state) {
+        switch (state) {
+            case STATE_RIDING:
+                return "RIDING";
+            case STATE_TAKEOFF:
+                return "TAKEOFF";
+            case STATE_AIRBORNE:
+                return "AIRBORNE";
+            case STATE_GRINDING:
+                return "GRINDING";
+            case STATE_LANDING:
+                return "LANDING";
+            default:
+                return "UNKNOWN";
+        }
+    }
 
     // Get calibration status
     function isCalibrationComplete() as Lang.Boolean {
@@ -516,6 +651,25 @@ class TrickDetector {
         longestGrindDuration = 0;
         lastTrickTime = 0;
         System.println("TrickDetector: Statistics reset");
+    }
+    
+    // NEW: Diagnostic logger access methods
+    function getDiagnosticLogger() {
+        return diagnosticLogger;
+    }
+    
+    function generateDiagnosticReport() {
+        if (diagnosticLogger != null) {
+            diagnosticLogger.generateDiagnosticReport();
+            return diagnosticLogger.getDiagnosticData();
+        }
+        return null;
+    }
+    
+    function setDiagnosticMode(enabled) {
+        if (diagnosticLogger != null) {
+            diagnosticLogger.setDebugMode(enabled);
+        }
     }
 
     // Get detailed state information
@@ -566,11 +720,15 @@ class TrickDetector {
                 
                 var magnitude = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2) + Math.pow(z, 2));
                 
-                // Simple trick detection logic
-                if (magnitude > TAKEOFF_ACCEL_THRESHOLD) {  //   (magnitude > TAKEOFF_ACCEL_THRESHOLD + 9.8)    - 9.8 is gravity
-                    // FIXED: Proper dictionary syntax
+                // CRITICAL FIX: Subtract gravity baseline before comparison
+                // magnitude includes gravity (~9.8g), so we need to compare against baseline
+                var accelerationChange = abs(magnitude - 9.8); // Change from gravity baseline
+                
+                // Only detect if we're calibrated and acceleration change exceeds threshold
+                if (isCalibrated && accelerationChange > TAKEOFF_ACCEL_THRESHOLD) {
                     var trickData = {
-                        "magnitude" => magnitude
+                        "magnitude" => magnitude,
+                        "change" => accelerationChange
                     } as Lang.Dictionary;
                     detectTrick("jump", trickData);
                 }
@@ -578,6 +736,114 @@ class TrickDetector {
                 System.println("TrickDetector: Error processing sensor data: " + exception.getErrorMessage());
             }
         }
+    }
+
+    // NEW: Integration methods
+    
+    // Set rotation detector for jump-rotation correlation
+    function setRotationDetector(detector) {
+        rotationDetector = detector;
+        System.println("TrickDetector: RotationDetector linked");
+    }
+    
+    // Set alert manager for audio feedback
+    function setAlertManager(manager) {
+        alertManager = manager;
+        System.println("TrickDetector: AlertManager linked");
+    }
+    
+    // Check if there was a rotation during jump
+    function checkRotationDuringJump(timestamp) {
+        if (rotationDetector == null || takeoffStartTime == null) {
+            return null;
+        }
+        
+        try {
+            // Get rotation data from the period of the jump
+            var jumpDuration = timestamp - takeoffStartTime;
+            var rotationStats = rotationDetector.getRotationStats();
+            
+            if (rotationStats != null) {
+                // Check if rotation occurred during jump timeframe
+                var recentRotations = rotationStats.get("recentRotations");
+                if (recentRotations != null && recentRotations instanceof Lang.Array && recentRotations.size() > 0) {
+                    // Get the most recent rotation
+                    var lastRotation = recentRotations[recentRotations.size() - 1] as Lang.Dictionary;
+                    var rotationTime = lastRotation.get("timestamp");
+                    
+                    // Check if rotation happened during jump (+/- 500ms window)
+                    if (rotationTime != null && 
+                        abs(rotationTime - takeoffStartTime) < jumpDuration + 500) {
+                        
+                        var angle = lastRotation.get("angle");
+                        if (angle != null && angle instanceof Lang.Float) {
+                            System.println("TrickDetector: Rotation detected during jump: " + 
+                                         angle.toString() + "°");
+                            return angle;
+                        }
+                    }
+                }
+            }
+            
+        } catch (exception) {
+            System.println("TrickDetector: Error checking rotation: " + exception.getErrorMessage());
+        }
+        
+        return null;
+    }
+    
+    // Play jump alert with rotation information
+    function playJumpAlert(rotationAngle) {
+        if (alertManager == null) {
+            return;
+        }
+        
+        try {
+            // Determine alert type based on rotation
+            var alertType = 0; // ALERT_JUMP
+            
+            if (rotationAngle != null) {
+                if (rotationAngle >= 540.0) {
+                    alertType = 3; // ALERT_JUMP_540
+                } else if (rotationAngle >= 360.0) {
+                    alertType = 2; // ALERT_JUMP_360
+                } else if (rotationAngle >= 180.0) {
+                    alertType = 1; // ALERT_JUMP_180
+                }
+            }
+            
+            alertManager.playAlert(alertType, rotationAngle);
+            
+        } catch (exception) {
+            System.println("TrickDetector: Error playing alert: " + exception.getErrorMessage());
+        }
+    }
+    
+    // Get jump statistics with rotation info
+    function getJumpStatsWithRotation() {
+        return {
+            "totalJumps" => totalJumpsDetected,
+            "jumpsWithRotation" => getJumpsWithRotationCount(),
+            "averageRotationAngle" => getAverageRotationAngle(),
+            "maxRotationDetected" => getMaxRotationDetected()
+        };
+    }
+    
+    // Helper functions for rotation statistics
+    function getJumpsWithRotationCount() {
+        // This would need to be tracked separately in a real implementation
+        // For now, return a placeholder
+        return 0;
+    }
+    
+    function getAverageRotationAngle() {
+        // Placeholder - would calculate from stored rotation data
+        return 0.0;
+    }
+    
+    function getMaxRotationDetected() {
+        // Placeholder - would track maximum rotation seen
+        return 0.0;
     }
 
     // Cleanup resources

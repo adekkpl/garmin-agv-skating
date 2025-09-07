@@ -134,7 +134,7 @@ dir $env:USERPROFILE\.Garmin\ConnectIQ\Sdks\
 in settings VSCode find "monkeyC.sdkPath" and unhash proper version
 //$env:PATH += ";C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks\connectiq-sdk-win-4.1.5-2022-08-03-6e17bf167\bin"
 //$env:PATH += ";C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks\connectiq-sdk-win-7.3.1-2024-09-23-df7b5816a\bin"
-active - usa always after VSCode restart and verify installation
+active - usa always after VSCode restart and verify installation, even after closing terminal use the same action again
 $env:PATH += ";C:\Users\krawc\AppData\Roaming\Garmin\ConnectIQ\Sdks\connectiq-sdk-win-8.1.1-2025-03-27-66dae750f\bin"
 
 shell
@@ -173,3 +173,87 @@ centerX = 227 (środek poziomo)
 centerY = 227 (środek pionowo)
 screenWidth = 454
 screenHeight = 454
+
+
+
+
+// założenia projektu detekcji tricku 
+ File Modification Summary
+
+  I have successfully completed the Enhanced Rotation Detection with Better Calibration phase. Here's what was
+  accomplished:
+
+  Files Modified:
+
+  1. C:\Users\krawc\source\repos\adekkpl\garmin-agv-skating\source\sensors\RotationDetector.mc | ITERATION: 2
+    - Major architectural enhancements:
+        - Multi-axis detection: Added support for X (pitch), Y (roll), and Z (yaw) axis rotation detection
+      - Advanced calibration: Replaced single-axis baseline with multi-axis baseline + variance analysis
+      - Adaptive thresholds: Dynamic threshold adjustment based on gyroscope noise characteristics
+      - Pattern analysis: Added analyzeRotationPattern() for complex rotation classification
+      - Enhanced state machine: New functions for multi-axis rotation start, progress, and completion detection
+
+  Key Technical Improvements:
+
+  1. Advanced Calibration System:
+  // Enhanced multi-axis gyroscope calibration with variance analysis
+  function calibrateMultiAxisGyro(gyroX, gyroY, gyroZ, timestamp) {
+      // Calculate mean baseline for each axis
+      gyroBaseline.put("x", gyroBaseline.get("x") / CALIBRATION_SAMPLES);
+      gyroBaseline.put("y", gyroBaseline.get("y") / CALIBRATION_SAMPLES);
+      gyroBaseline.put("z", gyroBaseline.get("z") / CALIBRATION_SAMPLES);
+
+      // Calculate adaptive thresholds based on noise levels
+      calculateAdaptiveThresholds();
+  2. Multi-Axis Pattern Recognition:
+  // Advanced rotation pattern analysis for multi-axis detection
+  function analyzeRotationPattern(smoothedRates) {
+      // Determine dominant rotation axis and type
+      if (abs(rateX) > adaptiveThreshold.get("x")) {
+          dominantAxis = rateX > 0 ? "pitch_forward" : "pitch_backward";
+      } else if (abs(rateY) > adaptiveThreshold.get("y")) {
+          dominantAxis = rateY > 0 ? "roll_right" : "roll_left";
+      }
+  3. Enhanced Detection Thresholds:
+    - Pitch (X-axis): 60°/s for forward/backward flips
+    - Roll (Y-axis): 60°/s for side-to-side rolls
+    - Yaw (Z-axis): 75°/s for spinning rotations (reduced from 90°/s)
+    - Adaptive adjustment: Thresholds automatically adjust based on device noise characteristics
+
+  Architectural Insights
+
+  Why Multi-Axis Detection Matters for Skating:
+
+  1. Real-World Skating Physics: Aggressive inline skating involves complex 3D rotations:
+    - Spin tricks: Pure Z-axis rotation (traditional approach worked here)
+    - Flip tricks: X-axis rotation (completely missed by old system)
+    - Roll tricks: Y-axis rotation (also missed)
+    - Complex tricks: Multi-axis combinations (impossible to detect before)
+  2. Improved Detection Accuracy: The enhanced calibration addresses core issues:
+    - Device variability: Each Garmin watch has slightly different gyroscope characteristics
+    - Environmental factors: Temperature, wear position, and user movement affect baseline readings
+    - Adaptive thresholds: System automatically adjusts sensitivity based on actual device performance
+
+  Sensor Fusion Architecture Pattern:
+
+  This enhancement implements a layered detection architecture:
+
+  1. Raw Sensor Layer: SensorManager provides 25Hz multi-axis gyroscope data
+  2. Processing Layer: RotationDetector applies calibration, filtering, and pattern analysis
+  3. Detection Layer: Enhanced state machine classifies rotation types with confidence scoring
+  4. Integration Layer: Results feed back to TrickDetector for jump-rotation correlation
+
+  Next Steps & Considerations
+
+  The next critical step is integrating the AccelerometerJumpDetector with the TrickDetector system. This will
+  create the comprehensive sensor fusion that addresses your original question about the technical foundation for
+  jump detection.
+
+  The enhanced RotationDetector now provides:
+  - Immediate detection response (25Hz vs 1Hz barometric)
+  - Multi-axis rotation classification (pitch, roll, yaw)
+  - Adaptive calibration (personalizes to each device/user)
+  - Pattern confidence scoring (reduces false positives)
+
+  This solid foundation will allow the AccelerometerJumpDetector to correlate with rotation events for
+  jump-with-rotation detection - exactly what your original question was seeking to understand and implement.

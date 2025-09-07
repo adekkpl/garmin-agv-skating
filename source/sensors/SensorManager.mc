@@ -695,15 +695,15 @@ class SensorManager {
                             var rotationStats = rotationDetector.getRotationStats();
                             var totalRotations = rotationStats.get("rightRotations") + rotationStats.get("leftRotations");
                             
-                            // Jeśli liczba obrotów się zmieniła, zaloguj i powiadom SessionStats
+                            // Jeśli liczba obrotów się zmieniła, zaloguj // i powiadom SessionStats
                             if (totalRotations != lastLoggedRotations) {
                                 System.println("SensorManager: Rotation detected! Total: " + totalRotations);
                                 lastLoggedRotations = totalRotations;
                                 
                                 // Powiadom SessionStats o nowym obrocie
-                                if (sessionStats != null) {
+                                /* if (sessionStats != null) {
                                     sessionStats.addRotation();
-                                }
+                                } */
                             }
                             
                         } catch (rotationException) {

@@ -69,19 +69,19 @@ class AccelerometerJumpDetector {
         stateStartTime = System.getTimer();
         
         // Initialize buffers
-        accelBuffer = new Lang.Array<Lang.Float>[PATTERN_WINDOW_SIZE];
-        accelXBuffer = new Lang.Array<Lang.Float>[PATTERN_WINDOW_SIZE];
-        accelYBuffer = new Lang.Array<Lang.Float>[PATTERN_WINDOW_SIZE];
-        accelZBuffer = new Lang.Array<Lang.Float>[PATTERN_WINDOW_SIZE];
-        timestampBuffer = new Lang.Array<Lang.Long>[PATTERN_WINDOW_SIZE];
+        accelBuffer = [];
+        accelXBuffer = [];
+        accelYBuffer = [];
+        accelZBuffer = [];
+        timestampBuffer = [];
         
         // Initialize with gravity baseline
         for (var i = 0; i < PATTERN_WINDOW_SIZE; i++) {
-            accelBuffer[i] = 9.8;
-            accelXBuffer[i] = 0.0;
-            accelYBuffer[i] = 0.0;
-            accelZBuffer[i] = 9.8;
-            timestampBuffer[i] = 0;
+            accelBuffer.add(9.8);
+            accelXBuffer.add(0.0);
+            accelYBuffer.add(0.0);
+            accelZBuffer.add(9.8);
+            timestampBuffer.add(0);
         }
         
         System.println("AccelerometerJumpDetector: Initialized - Advanced pattern detection enabled");

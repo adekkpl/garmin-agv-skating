@@ -78,17 +78,17 @@ class RotationDetector {
         currentState = STATE_STABLE;
         
         // Initialize enhanced multi-axis gyroscope buffers
-        gyroXBuffer = new Lang.Array<Lang.Float>[BUFFER_SIZE];
-        gyroYBuffer = new Lang.Array<Lang.Float>[BUFFER_SIZE];
-        gyroZBuffer = new Lang.Array<Lang.Float>[BUFFER_SIZE];
-        timestampBuffer = new Lang.Array<Lang.Number>[BUFFER_SIZE];
+        gyroXBuffer = [];
+        gyroYBuffer = [];
+        gyroZBuffer = [];
+        timestampBuffer = [];
         
-        // Initialize all buffers to zero
+        // Initialize all buffers to zero by adding elements
         for (var i = 0; i < BUFFER_SIZE; i++) {
-            gyroXBuffer[i] = 0.0;
-            gyroYBuffer[i] = 0.0;
-            gyroZBuffer[i] = 0.0;
-            timestampBuffer[i] = 0;
+            gyroXBuffer.add(0.0);
+            gyroYBuffer.add(0.0);
+            gyroZBuffer.add(0.0);
+            timestampBuffer.add(0);
         }
         
         rotationStartTime = null;
