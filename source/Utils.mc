@@ -210,6 +210,50 @@ class DeviceLogger {
     }
 }
 
+// Gravity constant and unit helpers
+const G = 9.80665;
+
+function gToMs2(value) {
+    return value * G;
+}
+
+function ms2ToG(value) {
+    return value / G;
+}
+
+// Raw sensor logging for calibration/export
+function appendRawSensorLog(timestamp, ax, ay, az, gx, gy, gz) {
+    try {
+        var key = "raw_sensor_log";
+        var logs = Storage.getValue(key);
+        if (logs == null) { logs = []; }
+        var line = timestamp.toString() + "," + ax.toString() + "," + ay.toString() + "," + az.toString() + "," + gx.toString() + "," + gy.toString() + "," + gz.toString();
+        logs.add(line);
+        Storage.setValue(key, logs);
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+// Export raw sensor log as string (for debug/export)
+function getRawSensorLogAsString() {
+    var key = "raw_sensor_log";
+    var logs = Storage.getValue(key);
+    if (logs == null) { return ""; }
+    var result = "timestamp,ax,ay,az,gx,gy,gz\n";
+
+    // Cast to Lang.Array to ensure safe container access
+    var arr = logs as Lang.Array;
+    if (arr == null) { return result; }
+    var n = arr.size();
+    for (var i = 0; i < n; i++) {
+        var entry = arr[i];
+        result += (entry != null ? entry.toString() : "") + "\n";
+    }
+    return result;
+}
+
 // GLOBALNE FUNKCJE LOGOWANIA
 function logDevice(message) {
     DeviceLogger.getInstance().addLogEntry(message);
