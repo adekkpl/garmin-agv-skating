@@ -1,5 +1,19 @@
 # Garmin Aggressive Inline Skating Tracker
 
+## Disclaimer
+
+This app is mainly a learning and fun project especially learning how to build or support coding with AI.
+It is a very open, fluid, experimental codebase where many things are unfinished, unstable, or may work incorrectly.
+
+Please do not treat this repository as a production-ready or fully working solution.
+It should be considered hobby work and a playground for ideas, testing, and future improvements like it was for me.
+
+Development is currently in a "future development" state and has been paused for some time due to Garmin-side limitations/blockers or leack of spare time.
+
+The starting point for experimenting with this project was a clone of Vít's app used only as a basic reference for a simple Garmin Connect IQ application structure. Since then, the project has been heavily rebuilt and expanded, and the current codebase no longer reflects that original app beyond a few historical repository artifacts.
+
+--
+
 Aplikacja Garmin Connect IQ do śledzenia jazdy na rolkach agresywnych w skateparkach i na ulicy. Automatycznie wykrywa skoki, grindy, slajdy i inne elementy charakterystyczne dla tego sportu.
 
 ## Wersja: 2.0.0
